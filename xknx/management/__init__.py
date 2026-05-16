@@ -3,3 +3,4 @@
 # ruff: noqa: F401
 from .management import Management, P2PConnection
 from .max_apdu import MaxApduResult
+from .procedures import nm_read_max_apdu_length

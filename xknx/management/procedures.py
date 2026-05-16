@@ -18,8 +18,56 @@ from xknx.telegram.address import (
 
 if TYPE_CHECKING:
     from xknx import XKNX
+    from xknx.management.management import P2PConnection
 
 logger = logging.getLogger("xknx.management.procedures")
+
+PID_MAX_APDU_LENGTH_DEVICE_OBJECT = 56
+"""``PID_MAX_APDU_LENGTH`` in the Device Object — KNX 03_05_01 §4.3.7."""
+
+
+async def nm_read_max_apdu_length(connection: P2PConnection) -> int | None:
+    """
+    Read ``PID_MAX_APDU_LENGTH`` from the Device Object of the connected peer.
+
+    Implements the §2.6.2.2 atom of KNX 03_05_03 (Configuration Procedures,
+    PDF p. 32) using the ``DMP_InterfaceObjectRead_R`` procedure
+    (KNX 03_05_02 §3.27.2, PDF p. 124):
+
+        if Property of management control is unknown to the Management Client
+            A_PropertyDescription_Read-PDU (object_index, PID)
+            A_PropertyDescription_Response-PDU (object_index, PID, type, ...)
+        endif
+        for each data block, until all data are transmitted
+            A_PropertyValue_Read-PDU
+                (object_index, PID, start_index, element_count)
+            A_PropertyValue_Response-PDU
+                (object_index, PID, start_index, element_count, data)
+        endfor
+
+    The data type of ``PID_MAX_APDU_LENGTH`` is known a priori
+    (PDT_UNSIGNED_INT, KNX 03_05_01 §4.3.7, PDF p. 46-47) so the optional
+    A_PropertyDescription_Read step is skipped.
+
+    Returns the value in octets, or ``None`` when the property is absent on
+    the device (peer responds with ``count = 0``). Per §4.3.7.1 valid
+    values are in the range 15..254; this helper does not enforce that
+    range — callers interpret values per §2.6 semantics.
+    """
+    response = await connection.request(
+        payload=apci.PropertyValueRead(
+            object_index=0,
+            property_id=PID_MAX_APDU_LENGTH_DEVICE_OBJECT,
+            count=1,
+            start_index=1,
+        ),
+        expected=apci.PropertyValueResponse,
+    )
+    payload = response.payload
+    assert isinstance(payload, apci.PropertyValueResponse)
+    if payload.count == 0 or not payload.data:
+        return None
+    return int.from_bytes(payload.data, byteorder="big")
 
 
 async def dm_restart(xknx: XKNX, individual_address: IndividualAddressableType) -> None:

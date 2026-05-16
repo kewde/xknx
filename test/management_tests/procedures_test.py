@@ -8,7 +8,7 @@ import pytest
 from xknx import XKNX
 from xknx.exceptions import ManagementConnectionError
 from xknx.management import procedures
-from xknx.management.management import MANAGAMENT_CONNECTION_TIMEOUT
+from xknx.management.management import MANAGAMENT_CONNECTION_TIMEOUT, P2PConnection
 from xknx.telegram import (
     GroupAddress,
     IndividualAddress,
@@ -19,6 +19,97 @@ from xknx.telegram import (
 )
 
 from ..conftest import EventLoopClockAdvancer
+
+
+async def _open_connection(xknx: XKNX, address: IndividualAddress) -> P2PConnection:
+    """Open a P2P connection for procedure tests that exercise the live transport."""
+    connection = await xknx.management.connect(address)
+    # discard the TConnect telegram from the call log so the test sees only the
+    # telegrams produced by the procedure under test
+    xknx.cemi_handler.send_telegram.reset_mock()
+    return connection
+
+
+def _incoming_ack(source: IndividualAddress, sequence: int) -> Telegram:
+    return Telegram(
+        source_address=source,
+        destination_address=IndividualAddress(0),
+        direction=TelegramDirection.INCOMING,
+        tpci=tpci.TAck(sequence),
+    )
+
+
+def _incoming_response(
+    source: IndividualAddress, sequence: int, payload: apci.APCI
+) -> Telegram:
+    return Telegram(
+        source_address=source,
+        destination_address=IndividualAddress(0),
+        direction=TelegramDirection.INCOMING,
+        tpci=tpci.TDataConnected(sequence),
+        payload=payload,
+    )
+
+
+async def test_nm_read_max_apdu_length_returns_value() -> None:
+    """Returns the integer value when the device exposes PID_MAX_APDU_LENGTH."""
+    xknx = XKNX()
+    xknx.cemi_handler = AsyncMock()
+    target = IndividualAddress("1.1.5")
+    connection = await _open_connection(xknx, target)
+
+    task = asyncio.create_task(procedures.nm_read_max_apdu_length(connection))
+    await asyncio.sleep(0)
+
+    expected_request = Telegram(
+        destination_address=target,
+        tpci=tpci.TDataConnected(0),
+        payload=apci.PropertyValueRead(
+            object_index=0, property_id=56, count=1, start_index=1
+        ),
+    )
+    assert xknx.cemi_handler.send_telegram.call_args_list == [call(expected_request)]
+
+    xknx.management.process(_incoming_ack(target, 0))
+    xknx.management.process(
+        _incoming_response(
+            target,
+            0,
+            apci.PropertyValueResponse(
+                object_index=0,
+                property_id=56,
+                count=1,
+                start_index=1,
+                data=b"\x00\xfe",
+            ),
+        )
+    )
+    assert await task == 254
+    await xknx.management.disconnect(target)
+
+
+async def test_nm_read_max_apdu_length_property_absent_returns_none() -> None:
+    """Returns None when the device responds with count=0 (property does not exist)."""
+    xknx = XKNX()
+    xknx.cemi_handler = AsyncMock()
+    target = IndividualAddress("1.1.5")
+    connection = await _open_connection(xknx, target)
+
+    task = asyncio.create_task(procedures.nm_read_max_apdu_length(connection))
+    await asyncio.sleep(0)
+
+    xknx.management.process(_incoming_ack(target, 0))
+    xknx.management.process(
+        _incoming_response(
+            target,
+            0,
+            apci.PropertyValueResponse(
+                object_index=0, property_id=56, count=0, start_index=0, data=b""
+            ),
+        )
+    )
+    assert await task is None
+    await xknx.management.disconnect(target)
 
 
 async def test_dm_restart() -> None:
