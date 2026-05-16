@@ -11,7 +11,12 @@ from xknx.exceptions import (
     ManagementConnectionTimeout,
 )
 from xknx.management.max_apdu import MaxApduResult
-from xknx.profile.const import ResourceDevicePropertyId, ResourceGenericPropertyId
+from xknx.profile.const import (
+    ResourceDevicePropertyId,
+    ResourceGenericPropertyId,
+    ResourceObjectType,
+    ResourceRouterPropertyId,
+)
 from xknx.telegram import Telegram, apci, tpci
 from xknx.telegram.address import (
     IndividualAddress,
@@ -33,6 +38,14 @@ The KNX spec (03_05_02 §3.28.2) does not impose a hard bound; the loop is
 expected to terminate when ``A_PropertyDescription_Response`` reports
 ``PID = 0``. This cap guards against misbehaving devices that always echo a
 non-zero PID.
+"""
+
+NON_EXTENDED_FRAME_MASK_VERSIONS: frozenset[int] = frozenset({0x0910, 0x0911})
+"""Device Descriptor Type 0 mask versions that do not support L_Data_Extended.
+
+KNX 03_05_01 §4.1.2 — Coupler 1.0 (TP1) and Coupler 1.1 (TP1) predate the
+extended-frame extension; §2.6.2.3 short-circuits to ``extended_frames =
+False`` when any in-between coupler reports either DD0 value.
 """
 
 
@@ -254,9 +267,44 @@ async def nm_discover_max_apdu_length(
             Endif
         Endif
 
-    §2.6.2.3 In-between-coupler walk is performed in a later commit. This
-    revision handles the local + target legs only and ignores
-    ``couplers``.
+    §2.6.2.3 3rd step — in all in-between couplers::
+
+        If ExtendedFrames = true then
+            Repeat /* For all in-between Routers do */
+                DMP_Connect_RCo(connection oriented; descriptor_type = 0)
+                If(DD0 = 0910h or DD0 = 0911h) then
+                    ExtendedFrames = false
+                Else
+                    RouterObject.index = DMP_InterfaceObjectScan_R();
+                    PID_MAX_APDU_LENGTH.Value = DMP_InterfaceObjectReadR(
+                        object_index = RouterObject.index;
+                        PID = PID_MAX_APDU_LENGTH;
+                        start_index = 1; element_count = 1)
+                    If RouterObject.PID_MAX_APDU_LENGTH does not exist then
+                        PID_MAX_APDU_LENGTH.Value = DMP_InterfaceObjectReadR(
+                            object_index = 0; PID = PID_MAX_APDU_LENGTH;
+                            start_index = 1; element_count = 1)
+                    EndIf
+                    If Property not present then
+                        ExtendedFrames = false
+                    Else
+                        If PID_MAX_APDU_LENGTH.Value > 15 then
+                            MaxFrameLength(thisRouter) = PID_MAX_APDU_LENGTH.Value
+                            MaxFrameLength = min(MaxFrameLength,
+                                                 MaxFrameLength(thisRouter))
+                        Else
+                            ExtendedFrames = false
+                        Endif
+                    Endif
+                Endif
+            Until ExtendedFrames = false OR no more in-between Routers
+        Endif
+
+    The set of in-between couplers is taken from ``couplers`` when
+    provided, else derived from ``xknx.current_address`` and ``target``
+    via :func:`_derive_in_between_couplers`. Each coupler is opened on a
+    fresh management connection with ``rate_limit = 0`` so the multi-
+    request scan does not stall on the inter-request throttle.
 
     §2.6.3 Error and exception handling:
         If the discovery would make assume a certain L_Data_Extended frame
@@ -275,7 +323,6 @@ async def nm_discover_max_apdu_length(
     not support extended frames" and the result reports
     ``extended_frames = False`` with ``target_length = None``.
     """
-    del couplers  # consumed in a later revision
     if local_max_apdu_length <= 15:
         return MaxApduResult(
             extended_frames=False,
@@ -287,8 +334,8 @@ async def nm_discover_max_apdu_length(
 
     target_ia = IndividualAddress(target)
     try:
-        async with xknx.management.connection(target_ia) as connection:
-            target_length = await nm_read_max_apdu_length(connection)
+        async with xknx.management.connection(target_ia) as target_conn:
+            target_length = await nm_read_max_apdu_length(target_conn)
     except ManagementConnectionTimeout:
         logger.debug(
             "Discovery timed out reading PID_MAX_APDU_LENGTH from %s; "
@@ -312,13 +359,108 @@ async def nm_discover_max_apdu_length(
             coupler_lengths=(),
         )
 
+    coupler_ias: list[IndividualAddress]
+    if couplers is None:
+        coupler_ias = _derive_in_between_couplers(xknx.current_address, target_ia)
+    else:
+        coupler_ias = [IndividualAddress(c) for c in couplers]
+
+    coupler_lengths: list[tuple[IndividualAddress, int]] = []
+    for coupler_ia in coupler_ias:
+        coupler_length = await _read_coupler_max_apdu_length(xknx, coupler_ia)
+        if coupler_length is None:
+            return MaxApduResult(
+                extended_frames=False,
+                max_frame_length=15,
+                local_length=local_max_apdu_length,
+                target_length=target_length,
+                coupler_lengths=tuple(coupler_lengths),
+            )
+        coupler_lengths.append((coupler_ia, coupler_length))
+
+    all_lengths = [
+        local_max_apdu_length,
+        target_length,
+        *(length for _, length in coupler_lengths),
+    ]
     return MaxApduResult(
         extended_frames=True,
-        max_frame_length=min(local_max_apdu_length, target_length),
+        max_frame_length=min(all_lengths),
         local_length=local_max_apdu_length,
         target_length=target_length,
-        coupler_lengths=(),
+        coupler_lengths=tuple(coupler_lengths),
     )
+
+
+async def _read_coupler_max_apdu_length(
+    xknx: XKNX, coupler_ia: IndividualAddress
+) -> int | None:
+    """
+    Probe one in-between coupler per KNX 03_05_03 §2.6.2.3.
+
+    Returns the coupler's effective ``PID_MAX_APDU_LENGTH`` in octets, or
+    ``None`` when the spec mandates that ``extended_frames`` be set to
+    False for this coupler (DD0 is a non-extended mask, the property is
+    absent on both Router Object and Device Object, the reported value is
+    ≤ 15, or the connection times out).
+    """
+    try:
+        async with xknx.management.connection(coupler_ia, rate_limit=0) as conn:
+            descriptor = await conn.request(
+                payload=apci.DeviceDescriptorRead(descriptor=0),
+                expected=apci.DeviceDescriptorResponse,
+            )
+            descriptor_payload = descriptor.payload
+            assert isinstance(descriptor_payload, apci.DeviceDescriptorResponse)
+            if descriptor_payload.value in NON_EXTENDED_FRAME_MASK_VERSIONS:
+                logger.debug(
+                    "Coupler %s reports DD0=%04Xh — disables extended frames.",
+                    coupler_ia,
+                    descriptor_payload.value,
+                )
+                return None
+
+            router_oi = await nm_interface_object_scan(
+                conn, ResourceObjectType.OBJECT_ROUTER
+            )
+            router_length: int | None = None
+            if router_oi is not None:
+                response = await conn.request(
+                    payload=apci.PropertyValueRead(
+                        object_index=router_oi,
+                        property_id=ResourceRouterPropertyId.PID_MAX_APDU_LENGTH_ROUTER,
+                        count=1,
+                        start_index=1,
+                    ),
+                    expected=apci.PropertyValueResponse,
+                )
+                router_payload = response.payload
+                assert isinstance(router_payload, apci.PropertyValueResponse)
+                if router_payload.count > 0 and router_payload.data:
+                    router_length = int.from_bytes(router_payload.data, "big")
+
+            # §2.6.2.3: "If the above fails, PID_MAX_APDU_LENGTH shall
+            # alternatively be read from the Device Object."
+            if router_length is None:
+                router_length = await nm_read_max_apdu_length(conn)
+
+            if router_length is None or router_length <= 15:
+                return None
+            return router_length
+    except ManagementConnectionTimeout:
+        logger.debug(
+            "Discovery timed out probing coupler %s; treating as "
+            "non-extended-frame capable.",
+            coupler_ia,
+        )
+        return None
+    except ManagementConnectionRefused:
+        logger.debug(
+            "Coupler %s refused the management connection; treating as "
+            "non-extended-frame capable.",
+            coupler_ia,
+        )
+        return None
 
 
 async def dm_restart(xknx: XKNX, individual_address: IndividualAddressableType) -> None:
