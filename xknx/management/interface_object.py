@@ -53,13 +53,27 @@ async def nm_interface_object_scan(
                     (object_index, PID = 01h, start_index = 01h,
                      element_count = 01h, data = object_type)
             endif
-            ...
+            Property_index = 0;
+            repeat if Property scan is enabled
+                A_PropertyDescription_Read-PDU
+                    (object_index, PID = 0, Property_index = 0)
+                A_PropertyDescription_Response-PDU
+                    (object_index, Property_index = 0, PID)
+                Property_index ++
+            until PID = 0
             object_index ++
         until PID = 0
 
     ``PID_OBJECT_TYPE`` (PID 1) is mandatory on every Interface Object per
     KNX 03.05.01 §4.2.1. The Device Object always carries object_type
     ``0x0000``; the Router Object ``0x0006``.
+
+    Implementation note: the spec wraps the object_type read in an inner
+    Property-index scan loop, used by callers that want to enumerate every
+    property of every object. This helper is scoped to "find an object by
+    type" and skips the inner scan — it advances ``object_index`` directly
+    after the type read. The outer loop's termination semantics are
+    preserved.
 
     Termination conditions:
         - First match found → return that ``object_index``.
