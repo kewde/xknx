@@ -5,11 +5,10 @@ Spec text (verbatim from spec):
 
     NOTE 7       This procedure was named NM_Coupler_Scan before.
 
-    Procedure
+    2.23.5.1 Procedure
     This Network Management Procedure shall allow detecting a Coupler in the local Subnetwork in
     which the MaC is installed. The service request and the service response shall be handled via point-to-
     all-points, connectionless (broadcast) communication mode.
-
     NM_Coupler_Scan_LocalSubnetwork (/* [in] */ ASAP, /* [in] */ comm_mode_req,
                      /* [in] */ hop_count_type_req, /* [in] */ object_type, /* [in] */ PID,
                      /* [in] */ test_info, /* [in] */ comm_mode_res, /* [in] */ hop_count_type_res,
@@ -32,8 +31,7 @@ Spec text (verbatim from spec):
 
     Used Application Layer services for Management
         •      A_NetworkParameter_Read
-
-    Sequence:
+    Sequence
     Management                                                                        Network /                      remark
     Client                                                                            Management
                                                                                       Server
@@ -49,8 +47,26 @@ Spec text (verbatim from spec):
                                                            The response(s) shall contain Object Type of the Router Object.
                                                            If the MaS is not a Coupler, then it shall not respond.
 
+                                A_NetworkParameter_Response-PDU
+                        (comm_mode_res = point-to-all-points connectionless
+                               object_type = Router Object, PID = 01h,
+                       test_info = 00h, test_result = Object Type of the Router
+                                           Object = 0006h).
+
+      2.23.5.2 Management Server support
+      •       The MaS shall verify that the test_info equals 0. If this is not the case, the MaS shall ignore the
+              request.
+      •       If the MaS (Coupler) implements more than one Router Object, then it shall only give one single
+              response, on the Medium Interface 7) on which the request is received.
+
+      2.23.5.3 Management Client support
+      •       The MaC shall take into account that the requirements to the MaS do not require that the MaS
+              (Coupler) be used as a Router (Line Coupler or Backbone Coupler), this is, this Management
+              Procedure will be responded upon as well by the Coupler implementations configured as KNX
+              TP1 Bridge or as KNX TP1 Repeater.
+
 Inputs (from spec):
-    [in] ASAP, [in] comm_mode_req, [in] hop_count_type_req, [in] object_type, [in] PID, [in] test_info, [in] comm_mode_res, [in] hop_count_type_res, [out] test_result
+    (see body)
 """
 
 from __future__ import annotations
