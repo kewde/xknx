@@ -10,6 +10,7 @@ from xknx.exceptions import (
     ManagementConnectionRefused,
     ManagementConnectionTimeout,
 )
+from xknx.management.max_apdu import MaxApduResult
 from xknx.profile.const import ResourceDevicePropertyId, ResourceGenericPropertyId
 from xknx.telegram import Telegram, apci, tpci
 from xknx.telegram.address import (
@@ -18,6 +19,8 @@ from xknx.telegram.address import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from xknx import XKNX
     from xknx.management.management import P2PConnection
 
@@ -190,6 +193,132 @@ async def nm_read_max_apdu_length(connection: P2PConnection) -> int | None:
     if payload.count == 0 or not payload.data:
         return None
     return int.from_bytes(payload.data, byteorder="big")
+
+
+async def nm_discover_max_apdu_length(
+    xknx: XKNX,
+    target: IndividualAddressableType,
+    *,
+    local_max_apdu_length: int = 254,
+    couplers: Sequence[IndividualAddressableType] | None = None,
+) -> MaxApduResult:
+    """
+    Discover the maximal APDU length usable between MaC and a target device.
+
+    KNX 03_05_03 Configuration Procedures v02.01.01 §2.6 (PDF p. 31-33).
+
+    §2.6.1 Goal:
+        This clause specifies the Configuration Procedures to discover the
+        maximal frame size that can be used between a Management Client and
+        a Management Server. L_Data_Standard frames shall always be capable
+        of supporting APDUs of up to 14 octets. L_Data_Extended frames are
+        capable of transferring larger APDUs; therefore this procedure
+        focuses on discovering the maximal frame size that can be used with
+        L_Data_Extended frames.
+
+    §2.6.2.1 1st step — in the local device::
+
+        ExtendedFrames = false;
+        MaxFrameLength(local) = 15;
+        If EMI-Type = cEMI then
+            M_PropRead(Device Object, Object Instance = 1,
+                       Property_Id = 56, start_index = 1);
+            If PID_MAX_APDU_LENGTH.Value > 15 then
+                ExtendedFrames = true;
+                MaxFrameLength(local) = PID_MAX_APDU_LENGTH.Value
+            Endif
+        Endif
+
+    The local value is taken from ``local_max_apdu_length`` (default 254).
+    Routing-mode KNXnet/IP always uses cEMI extended frames; in tunnel
+    mode the caller may pass the value advertised by the tunnel's
+    ``DIBTunnelingInfo`` if available.
+
+    §2.6.2.2 2nd step — in the target device::
+
+        If ExtendedFrames = true then
+            MaxFrameLength(target) = 15;
+            DMP_InterfaceObjectReadR(object_index = 0;
+                PID = PID_MAX_APDU_LENGTH;
+                start_index = 1; element_count = 1);
+            If DeviceObject.PID_MAX_APDU_LENGTH is present then
+                If PID_MAX_APDU_LENGTH.Value > 15 then
+                    MaxFrameLength(target) = PID_MAX_APDU_LENGTH.Value
+                    MaxFrameLength = min(MaxFrameLength(local),
+                                         MaxFrameLength(target))
+                Else
+                    ExtendedFrames = false
+                Endif
+            Else
+                ExtendedFrames = false
+            Endif
+        Endif
+
+    §2.6.2.3 In-between-coupler walk is performed in a later commit. This
+    revision handles the local + target legs only and ignores
+    ``couplers``.
+
+    §2.6.3 Error and exception handling:
+        If the discovery would make assume a certain L_Data_Extended frame
+        length is supported along the entire communication path and
+        afterwards communication using this frame length fails, then the
+        following fall back option shall be used. Failure of management
+        with APDU-length > 55 shall firstly fall back to management with
+        APDU-length = 55 and only if also this fails to management with
+        L_Data_Standard frames.
+
+    Note: this function performs discovery only. The §2.6.3 runtime
+    fallback (55/standard) is the caller's responsibility — the
+    discovered value can later be invalidated by an actual send failure.
+
+    A timeout when reading from the target is treated as "target does
+    not support extended frames" and the result reports
+    ``extended_frames = False`` with ``target_length = None``.
+    """
+    del couplers  # consumed in a later revision
+    if local_max_apdu_length <= 15:
+        return MaxApduResult(
+            extended_frames=False,
+            max_frame_length=15,
+            local_length=local_max_apdu_length,
+            target_length=None,
+            coupler_lengths=(),
+        )
+
+    target_ia = IndividualAddress(target)
+    try:
+        async with xknx.management.connection(target_ia) as connection:
+            target_length = await nm_read_max_apdu_length(connection)
+    except ManagementConnectionTimeout:
+        logger.debug(
+            "Discovery timed out reading PID_MAX_APDU_LENGTH from %s; "
+            "treating target as non-extended-frame capable.",
+            target_ia,
+        )
+        return MaxApduResult(
+            extended_frames=False,
+            max_frame_length=15,
+            local_length=local_max_apdu_length,
+            target_length=None,
+            coupler_lengths=(),
+        )
+
+    if target_length is None or target_length <= 15:
+        return MaxApduResult(
+            extended_frames=False,
+            max_frame_length=15,
+            local_length=local_max_apdu_length,
+            target_length=target_length,
+            coupler_lengths=(),
+        )
+
+    return MaxApduResult(
+        extended_frames=True,
+        max_frame_length=min(local_max_apdu_length, target_length),
+        local_length=local_max_apdu_length,
+        target_length=target_length,
+        coupler_lengths=(),
+    )
 
 
 async def dm_restart(xknx: XKNX, individual_address: IndividualAddressableType) -> None:
