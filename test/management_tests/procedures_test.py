@@ -9,6 +9,7 @@ from xknx import XKNX
 from xknx.exceptions import ManagementConnectionError
 from xknx.management import interface_object, max_apdu, procedures
 from xknx.management.management import MANAGAMENT_CONNECTION_TIMEOUT, P2PConnection
+from xknx.profile.const import ResourceDevicePropertyId, ResourceGenericPropertyId
 from xknx.telegram import (
     GroupAddress,
     IndividualAddress,
@@ -73,7 +74,10 @@ async def test_nm_read_max_apdu_length_returns_value() -> None:
         destination_address=target,
         tpci=tpci.TDataConnected(0),
         payload=apci.PropertyValueRead(
-            object_index=0, property_id=56, count=1, start_index=1
+            object_index=0,
+            property_id=ResourceDevicePropertyId.PID_MAX_APDU_LENGTH,
+            count=1,
+            start_index=1,
         ),
     )
     assert xknx.cemi_handler.send_telegram.call_args_list == [call(expected_request)]
@@ -85,7 +89,7 @@ async def test_nm_read_max_apdu_length_returns_value() -> None:
             0,
             apci.PropertyValueResponse(
                 object_index=0,
-                property_id=56,
+                property_id=ResourceDevicePropertyId.PID_MAX_APDU_LENGTH,
                 count=1,
                 start_index=1,
                 data=b"\x00\xfe",
@@ -112,7 +116,11 @@ async def test_nm_read_max_apdu_length_property_absent_returns_none() -> None:
             target,
             0,
             apci.PropertyValueResponse(
-                object_index=0, property_id=56, count=0, start_index=0, data=b""
+                object_index=0,
+                property_id=ResourceDevicePropertyId.PID_MAX_APDU_LENGTH,
+                count=0,
+                start_index=0,
+                data=b"",
             ),
         )
     )
@@ -165,7 +173,7 @@ async def _drive_scan_step(
             seq_value,
             apci.PropertyValueResponse(
                 object_index=0,
-                property_id=1,
+                property_id=ResourceGenericPropertyId.PID_OBJECT_TYPE,
                 count=count,
                 start_index=1,
                 data=data,

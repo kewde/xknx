@@ -14,6 +14,7 @@ from unittest.mock import AsyncMock, call
 from xknx import XKNX
 from xknx.management import nm_discover_max_apdu_length
 from xknx.management.max_apdu import _derive_in_between_couplers
+from xknx.profile.const import ResourceDevicePropertyId, ResourceGenericPropertyId
 from xknx.telegram import (
     IndividualAddress,
     Telegram,
@@ -45,11 +46,15 @@ def _response(source: IndividualAddress, sequence: int, payload: apci.APCI) -> T
 def _property_value_response(value: int | None) -> apci.PropertyValueResponse:
     if value is None:
         return apci.PropertyValueResponse(
-            object_index=0, property_id=56, count=0, start_index=0, data=b""
+            object_index=0,
+            property_id=ResourceDevicePropertyId.PID_MAX_APDU_LENGTH,
+            count=0,
+            start_index=0,
+            data=b"",
         )
     return apci.PropertyValueResponse(
         object_index=0,
-        property_id=56,
+        property_id=ResourceDevicePropertyId.PID_MAX_APDU_LENGTH,
         count=1,
         start_index=1,
         data=value.to_bytes(2, byteorder="big"),
@@ -154,7 +159,10 @@ async def test_local_and_target_extended_returns_minimum() -> None:
         destination_address=target,
         tpci=tpci.TDataConnected(0),
         payload=apci.PropertyValueRead(
-            object_index=0, property_id=56, count=1, start_index=1
+            object_index=0,
+            property_id=ResourceDevicePropertyId.PID_MAX_APDU_LENGTH,
+            count=1,
+            start_index=1,
         ),
     )
 
@@ -228,7 +236,9 @@ async def _feed_scan_step_match(
             coupler,
             description_sequence,
             apci.PropertyDescriptionResponse(
-                object_index=0, property_id=1, property_index=0
+                object_index=0,
+                property_id=ResourceGenericPropertyId.PID_OBJECT_TYPE,
+                property_index=0,
             ),
         )
     )
@@ -240,7 +250,7 @@ async def _feed_scan_step_match(
             value_sequence,
             apci.PropertyValueResponse(
                 object_index=0,
-                property_id=1,
+                property_id=ResourceGenericPropertyId.PID_OBJECT_TYPE,
                 count=1,
                 start_index=1,
                 data=object_type.to_bytes(2, byteorder="big"),
