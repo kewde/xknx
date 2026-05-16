@@ -101,33 +101,58 @@ def _derive_in_between_couplers(
 
     A KNX Individual Address has three parts: ``area`` (4 bit), ``main``
     (4 bit, the trunk/line subdivision), and ``line`` (8 bit, the device
-    number on the line). Line and area couplers sit at addresses with
-    ``line = 0``:
+    number on the line). Per KNX 03.05.01 §5.1, the Coupler Individual
+    Address encodes the role:
 
-        - Line Coupler  at  ``area.main.0`` — between trunk and line.
-        - Area Coupler  at  ``area.0.0``    — between backbone and area.
+        - Backbone/Area Coupler   bits 0-11 = 0   ⇒  ``A.0.0``
+        - Line Coupler            bits 8-11 ≠ 0,
+                                  bits 0-7  = 0   ⇒  ``A.M.0`` (M ≠ 0)
 
-    The enumeration is destination-side only: source-side couplers are
-    not queried because the source on a Management Client is the
-    KNXnet/IP interface itself, whose ``PID_MAX_APDU_LENGTH`` is taken
-    from the local DIB and not via §2.6.2.3.
+    KNX 03.05.03 §2.6.2.3 says "For all in-between Routers do" but does
+    not prescribe how to enumerate them. The routing algorithm is in
+    KNX 03.03.03 §2.4.2.4.5.4 (Line Coupler - Routing of an Individual
+    Destination Address): a frame from area ``A_s`` line ``M_s`` to
+    area ``A_d`` line ``M_d`` traverses, in order:
 
-    Rules:
+        SRC line coupler  ─►  SRC area coupler  ─►
+        DST area coupler  ─►  DST line coupler
+
+    Each coupler runs its own per-router decision state machine
+    (FORWARD_LOCALLY / ROUTE / IGNORE_*) based on its Subnetwork
+    Address relative to the destination. Whether a particular hop
+    exists depends on the source and destination position:
+
+        - SRC line coupler exists iff ``source.main != 0``. In xknx
+          it is the KNXnet/IP interface itself — its
+          ``PID_MAX_APDU_LENGTH`` is the §2.6.2.1 local value taken
+          from the local DIB rather than re-probed via §2.6.2.3, so
+          we never emit it here.
+        - SRC area coupler exists iff ``source.area != 0``. Emitted
+          for cross-area paths.
+        - DST area coupler is emitted for cross-area paths.
+        - DST line coupler exists iff ``target.main != 0``. Emitted.
+
+    Rules implemented:
         - Same area, same main → no in-between couplers.
         - Same area, different main → destination line coupler at
           ``target_area.target_main.0``.
-        - Different area → destination area coupler at
-          ``target_area.0.0`` plus, when ``target.main != 0`` (target
-          not on the area trunk), the destination line coupler at
-          ``target_area.target_main.0``.
+        - Different area → source area coupler at
+          ``source_area.0.0`` (when ``source.area != 0``), then
+          destination area coupler at ``target_area.0.0``, then
+          destination line coupler at ``target_area.target_main.0``
+          (when ``target.main != 0``).
 
-    Callers may override this with an explicit coupler list when the
-    topology does not match these defaults (e.g. mixed-medium installs).
+    Callers whose topology breaks these assumptions (mixed-media
+    installs, repeaters, multi-line couplers) can pass an explicit
+    coupler list to ``nm_discover_max_apdu_length`` and override the
+    derivation.
     """
     if source.area == target.area and source.main == target.main:
         return []
     couplers: list[IndividualAddress] = []
     if source.area != target.area:
+        if source.area != 0:
+            couplers.append(IndividualAddress(source.area << 12))
         couplers.append(IndividualAddress(target.area << 12))
         if target.main != 0:
             couplers.append(IndividualAddress((target.area << 12) | (target.main << 8)))

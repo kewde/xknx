@@ -77,22 +77,41 @@ def test_cross_line_same_area_yields_destination_line_coupler() -> None:
     ]
 
 
-def test_cross_area_yields_area_then_line_coupler() -> None:
-    """A cross-area path traverses the destination area coupler then line coupler."""
+def test_cross_area_yields_src_area_then_dst_area_then_dst_line() -> None:
+    """
+    A cross-area path traverses src area, dst area, then dst line couplers.
+
+    Per KNX 03.03.03 §2.4.2.4.5.4 the full path is
+    src-line - src-area - dst-area - dst-line. xknx skips the
+    src-line coupler because it is the local cEMI peer covered by
+    §2.6.2.1.
+    """
     source = IndividualAddress("1.1.1")
     target = IndividualAddress("3.2.5")
     assert _derive_in_between_couplers(source, target) == [
+        IndividualAddress("1.0.0"),
         IndividualAddress("3.0.0"),
         IndividualAddress("3.2.0"),
     ]
 
 
-def test_cross_area_target_on_trunk_skips_line_coupler() -> None:
-    """When the target is on the area trunk (main=0), only the area coupler is in-between."""
+def test_cross_area_target_on_trunk_skips_dst_line_coupler() -> None:
+    """When the target is on the area trunk (main=0), only the two area couplers remain."""
     source = IndividualAddress("1.1.1")
     target = IndividualAddress("3.0.5")
     assert _derive_in_between_couplers(source, target) == [
+        IndividualAddress("1.0.0"),
         IndividualAddress("3.0.0"),
+    ]
+
+
+def test_cross_area_source_on_backbone_skips_src_area_coupler() -> None:
+    """When source is on the IP backbone (area=0), no src-side area coupler exists."""
+    source = IndividualAddress("0.0.0")
+    target = IndividualAddress("3.2.5")
+    assert _derive_in_between_couplers(source, target) == [
+        IndividualAddress("3.0.0"),
+        IndividualAddress("3.2.0"),
     ]
 
 
