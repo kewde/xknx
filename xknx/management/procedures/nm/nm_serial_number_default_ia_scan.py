@@ -1,17 +1,16 @@
 """
-NM_SerialNumberDefaultIA_Scan — KNX 03.05.02 §2.24 (PDF p. 66).
+NM_SerialNumberDefaultIA_Scan — KNX 03.05.02 §2.24 (PDF p. 65).
 
 Spec text (verbatim from spec):
 
     Use
-    This Network Management Procedure shall be used to obtain the KNX Serial Number of each device
-    of which the Individual Address (IA) is the default Individual Address for the given medium
-    (Subnetwork address as specified in [05], this is, with the Device Address FFh).
+      This Network Management Procedure shall be used to obtain the KNX Serial Number of each device
+      of which the Individual Address (IA) is the default Individual Address for the given medium
+      (Subnetwork address as specified in [05], this is, with the Device Address FFh..
+      Used Application Layer Services for Management
+            •      A_PropertyValue_Read
 
-    Used Application Layer Services for Management
-          •      A_PropertyValue_Read
-
-    Sequence:
+    Sequence
     Management                                                             Network /                  remark
     Client                                                                 Management
                                                                            Server
@@ -39,7 +38,7 @@ Spec text (verbatim from spec):
     The general exception handling applies.
 
 Inputs (from spec):
-    None (uses default Individual Address for specified medium)
+    (see body)
 """
 
 from __future__ import annotations

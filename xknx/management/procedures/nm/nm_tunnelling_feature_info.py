@@ -22,8 +22,6 @@ Spec text (verbatim from spec):
                              UDP: If the Tunnelling Server does not receive a TUNNELLING_ACK within the TUNNELLING_-
                                 REQUEST_TIME_OUT (1 s) then it shall repeat the TUNNELLING_FEATURE_INFO 1 time.
 
-    7 RF Management Procedures
-
 Inputs (from spec):
     (see body)
 """
