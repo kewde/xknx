@@ -1,5 +1,5 @@
 """
-NM_GroupAddress_Scan — KNX 03.05.02 §2.23.3 (PDF p. 60).
+NM_GroupAddress_Scan — KNX 03.05.02 §2.23.3 (PDF p. 59).
 
 Spec text (verbatim from spec):
 
@@ -10,7 +10,6 @@ Spec text (verbatim from spec):
     This Network Management Procedure shall be used by a Management Client to find if a Group
     Address is used in the network or not. In general, it shall be used to find a free Group Address before
     assigning it in a subsequent Management Procedure to one or more Management Servers (devices).
-
     Used Application Layer Services for Management
           •    A_NetworkParameter_Read
 
@@ -21,7 +20,7 @@ Spec text (verbatim from spec):
               PID:                        PID_TABLE = 23 (List of Group Addresses)
               comm_mode response:         point-to-point, connectionless
 
-    Sequence:
+    Sequence
     Management                                                            Network /                remark
     Client                                                                Management
                                                                           Server
@@ -36,7 +35,6 @@ Spec text (verbatim from spec):
                      range = rangechecked, start_address = GAChecked)                  or more Group Objects, one
                                                                                        single response is sent by the
                                                                                        device.
-
 
     Management Server support
     If a Management Server (device) supports Group Addresses (multicast communication mode) and
@@ -73,7 +71,7 @@ Spec text (verbatim from spec):
     require the support of this service, the result of this procedure may be less reliable.
 
 Inputs (from spec):
-    [in] GAchecked, [in] rangechecked, [out] test_result
+    (see body)
 """
 
 from __future__ import annotations

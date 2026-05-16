@@ -1,11 +1,11 @@
 """
-NM_IndividualAddress_Check_LocalSubNetwork — KNX 03.05.02 §2.22.3 (PDF p. 50-51).
+NM_IndividualAddress_Check_LocalSubNetwork — KNX 03.05.02 §2.22.3 (PDF p. 49).
 
 Spec text (verbatim from spec):
 
     Use
     The procedure shall be used by a Management Client to check whether a given Individual Address is
-    occupied on the Subnetwork where it is itself located (the "local" Subnetwork).
+    occupied on the Subnetwork where it is itself located (the “local” Subnetwork).
     To check whether an Individual Address is occupied on a local Subnetwork the Management Client
     shall transmit an A_NetworkParameter_Write-PDU on point-to-point connectionless communication
     mode addressed at the Individual Address PPPP under test.
@@ -14,7 +14,6 @@ Spec text (verbatim from spec):
     Management Client is mounted, the A_NetworkParameter_Write-PDU shall be sent with the
     parameter hop_count = 0, so that Routers do not pass this message.
     The Subnetwork Address is assumed to be set.
-
     Individual Address handling during the procedure
     The Source Address in the A_NetworkParameter_Write-PDU used in the below sequence shall be set
     to the current Individual Address of the device, this is the one stored in NVRAM. During the
@@ -22,7 +21,6 @@ Spec text (verbatim from spec):
 
     At that time, the Individual Address PPPP checked is not valid for the device. So the device shall not
     acknowledge any telegram sent to this Individual Address PPPP.
-
     Possible situations and reactions during the Management Procedure
     According to the specification of the Data Link Layer, the user layer of the MAC layer will receive an
     L_Data.con with the possible values of the parameter l_status:
@@ -46,11 +44,13 @@ Spec text (verbatim from spec):
           retransmissions shall be recovered from by a constant Individual Address conflict detection
           procedure of the Configuration Mode that uses
           NM_IndividualAddress_Check_LocalSubnetwork.
-
     Used Application Layer Services for Management
         • A_NetworkParameter_Write
 
-    Sequence:
+    Inputs
+              -     PPPP:     Individual Address of which the occupation on the Subnetwork has to be tested.
+
+    Sequence
        Management                                                                 Management
             Client                                                                Server          remark
                               A_NetworkParameter_Write-PDU
@@ -69,12 +69,11 @@ Spec text (verbatim from spec):
                                              value = 00h,
                                               a_status)
 
-
     If a_status = OK then IA PPPP Occupied
     else IA PPPP is Not Occupied
 
 Inputs (from spec):
-    PPPP (Individual Address to be checked)
+    (see body)
 """
 
 from __future__ import annotations

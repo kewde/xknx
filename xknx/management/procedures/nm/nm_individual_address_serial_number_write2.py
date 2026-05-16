@@ -1,22 +1,45 @@
 """
-NM_IndividualAddress_SerialNumber_Write2 — KNX 03.05.02 §2.6 (PDF p. 17).
+NM_IndividualAddress_SerialNumber_Write2 — KNX 03.05.02 §2.6 (PDF p. 16).
 
 Spec text (verbatim from spec):
 
     Use
-    NOTE         The beginning of the procedure is identical to the link sequence of PB-Mode. A central Management Client shall react to the Start_Link command by sending a Stop_Link. The device shall stop the link sequence.
+    NOTE         The beginning of the procedure is identical to the link sequence of PB-Mode. A central Management Client shall
+    react to the Start_Link command by sending a Stop_Link. The device shall stop the link sequence.
 
-    At this point the Management Client shall know the KNX Serial Number of the device and shall assign the Individual Address with A_IndividualAddressSerialNumber_Write. Finally the Device Descriptor shall be read.
+    At this point the Management Client shall know the KNX Serial Number of the device and shall
+    assign the Individual Address with A_IndividualAddressSerialNumber_Write. Finally the Device
+    Descriptor shall be read.
 
-    Sequence diagram shows:
-    - Sensor in config mode sends CC_Config_Link (Start_Link, manufacturer code, Number of objects)
-    - Central Unit enters config mode and sends CC_Config_Link (Stop_Link)
-    - Sensor leaves config mode, stops link sequence
-    - Central Unit writes Individual Address with A_IndividualAddressSerialNumber_Write-PDU (serial_number, new_address)
-    - Central Unit sends A_IndividualAddressSerialNumber_Read-PDU (serial_number)
-    - Management Server responds with A_IndividualAddressSerialNumber_Response-PDU (serial_number)
-    - Central Unit reads DD2 (point-to-point) with A_DeviceDescriptor_Read-PDU (descriptor_type = 2)
-    - Management Server responds with A_DeviceDescriptor_Response-PDU (descriptor_type = 2, device_descriptor)
+     Sensor                                                                         Central Unit
+     sensor in config mode
+                                                       CC_Config_Link
+                                               (Start_Link, manufacturer code,
+                                                      Number of objects)
+
+                                                                                    enter config mode
+                                                      CC_Config_Link
+                                                        (Stop_Link)
+
+     leaves config mode                                                             stop link sequence
+                                                                                    write Individual Address
+                                      A_IndividualAddressSerialNumber_Write-PDU
+                                              (serial_number, new_address)
+
+                                      A_IndividualAddressSerialNumber_Read-PDU
+                                                    (serial_number)
+
+                                      A_IndividualAddressSerialNumber_Response-P
+                                                           DU
+                                                    (serial_number)
+
+                                                                                    read DD2 (point-to-point)
+                                               A_DeviceDescriptor_Read-PDU
+                                                   (descriptor_type = 2)
+
+                                          A_DeviceDescriptor_Response-PDU
+                                         (descriptor_type = 2, device_descriptor)
+                                                                                                           See note a)
 
     Notes
     a)    In the context of this Management Procedure NM_IndividualAddress_SerialNumber_Write2, the
@@ -26,7 +49,7 @@ Spec text (verbatim from spec):
           should not be evaluated at this point.
 
 Inputs (from spec):
-    [Implicit: serial_number, new_address; verification uses A_DeviceDescriptor_Read with descriptor_type = 2]
+    (see body)
 """
 
 from __future__ import annotations
