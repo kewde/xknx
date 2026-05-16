@@ -1,5 +1,5 @@
 """
-Discovery of maximal frame length — KNX 03_05_03 §2.6.
+Discovery of maximal frame length — KNX 03.05.03 §2.6.
 
 Contains the result type and the procedures that implement the three-step
 discovery algorithm:
@@ -10,7 +10,7 @@ discovery algorithm:
               circuit on Coupler 1.0/1.1 masks and Device-Object fallback
               when the Router Object value is absent.
 
-KNX 03_05_03 Configuration Procedures v02.01.01, §2.6 (PDF p. 31-33).
+KNX 03.05.03 Configuration Procedures v02.01.01 §2.6 (PDF p. 31-33).
 
 §2.6.1 Goal:
     This clause specifies the Configuration Procedures to discover the
@@ -57,7 +57,7 @@ logger = logging.getLogger("xknx.management.procedures")
 NON_EXTENDED_FRAME_MASK_VERSIONS: frozenset[int] = frozenset({0x0910, 0x0911})
 """Device Descriptor Type 0 mask versions that do not support L_Data_Extended.
 
-KNX 03_05_01 §4.1.2 — Coupler 1.0 (TP1) and Coupler 1.1 (TP1) predate the
+KNX 03.05.01 §4.1.2 — Coupler 1.0 (TP1) and Coupler 1.1 (TP1) predate the
 extended-frame extension; §2.6.2.3 short-circuits to ``extended_frames =
 False`` when any in-between coupler reports either DD0 value.
 """
@@ -74,7 +74,7 @@ class MaxApduResult:
             frames with APDU > 15. False if any hop falls back to standard
             frames; in that case ``max_frame_length`` is 15.
         max_frame_length: Minimum APDU length usable end-to-end, in octets.
-            Per KNX 03_05_01 §4.3.7 the value is bounded to 15..254. When
+            Per KNX 03.05.01 §4.3.7 the value is bounded to 15..254. When
             ``extended_frames`` is False this is 15 (L_Data_Standard floor).
         local_length: Local device's reported ``PID_MAX_APDU_LENGTH``. Per
             §2.6.2.1 this is read from the local Device Object via cEMI
@@ -141,9 +141,9 @@ async def nm_read_max_apdu_length(connection: P2PConnection) -> int | None:
     """
     Read ``PID_MAX_APDU_LENGTH`` from the Device Object of the connected peer.
 
-    Implements the §2.6.2.2 atom of KNX 03_05_03 (Configuration Procedures,
-    PDF p. 32) using the ``DMP_InterfaceObjectRead_R`` procedure
-    (KNX 03_05_02 §3.27.2, PDF p. 124):
+    Implements the §2.6.2.2 atom of KNX 03.05.03 (PDF p. 32) using the
+    ``DMP_InterfaceObjectRead_R`` procedure from KNX 03.05.02 §3.27.2
+    (PDF p. 124):
 
         if Property of management control is unknown to the Management Client
             A_PropertyDescription_Read-PDU (object_index, PID)
@@ -157,7 +157,7 @@ async def nm_read_max_apdu_length(connection: P2PConnection) -> int | None:
         endfor
 
     The data type of ``PID_MAX_APDU_LENGTH`` is known a priori
-    (PDT_UNSIGNED_INT, KNX 03_05_01 §4.3.7, PDF p. 46-47) so the optional
+    (PDT_UNSIGNED_INT, KNX 03.05.01 §4.3.7, PDF p. 46-47) so the optional
     A_PropertyDescription_Read step is skipped.
 
     Returns the value in octets, or ``None`` when the property is absent on
@@ -191,7 +191,7 @@ async def nm_discover_max_apdu_length(
     """
     Discover the maximal APDU length usable between MaC and a target device.
 
-    KNX 03_05_03 Configuration Procedures v02.01.01 §2.6 (PDF p. 31-33).
+    KNX 03.05.03 Configuration Procedures v02.01.01 §2.6 (PDF p. 31-33).
 
     §2.6.1 Goal:
         This clause specifies the Configuration Procedures to discover the
@@ -369,7 +369,7 @@ async def _read_coupler_max_apdu_length(
     xknx: XKNX, coupler_ia: IndividualAddress
 ) -> int | None:
     """
-    Probe one in-between coupler per KNX 03_05_03 §2.6.2.3.
+    Probe one in-between coupler per KNX 03.05.03 §2.6.2.3.
 
     Returns the coupler's effective ``PID_MAX_APDU_LENGTH`` in octets, or
     ``None`` when the spec mandates that ``extended_frames`` be set to

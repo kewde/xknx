@@ -1,5 +1,5 @@
 """
-Generic Interface Object management primitives — KNX 03_05_02.
+Generic Interface Object management primitives — KNX 03.05.02.
 
 This module hosts the management procedures that operate on Interface
 Objects in a generic, spec-section-agnostic way. Higher-level procedures
@@ -25,7 +25,7 @@ logger = logging.getLogger("xknx.management.procedures")
 INTERFACE_OBJECT_SCAN_LIMIT = 256
 """Safety cap on object_index iteration in :func:`nm_interface_object_scan`.
 
-The KNX spec (03_05_02 §3.28.2) does not impose a hard bound; the loop is
+KNX 03.05.02 §3.28.2 does not impose a hard bound; the loop is
 expected to terminate when ``A_PropertyDescription_Response`` reports
 ``PID = 0``. This cap guards against misbehaving devices that always echo a
 non-zero PID.
@@ -38,7 +38,7 @@ async def nm_interface_object_scan(
     """
     Find the first Interface Object of ``object_type`` on the connected peer.
 
-    Implements ``DMP_InterfaceObjectScan_R`` from KNX 03_05_02 §3.28.2
+    Implements ``DMP_InterfaceObjectScan_R`` from KNX 03.05.02 §3.28.2
     (PDF p. 127). Verbatim spec pseudocode:
 
         object_index = 0;
@@ -60,7 +60,7 @@ async def nm_interface_object_scan(
         until PID = 0
 
     ``PID_OBJECT_TYPE`` (PID 1) is mandatory on every Interface Object per
-    KNX 03_05_01 §4.2.1. The Device Object always carries object_type
+    KNX 03.05.01 §4.2.1. The Device Object always carries object_type
     ``0x0000``; the Router Object ``0x0006``.
 
     Termination conditions:
@@ -71,7 +71,7 @@ async def nm_interface_object_scan(
           ``None``.
 
     Note: a coupler with multiple Router Object instances (multi-line
-    coupler, per KNX 03_05_01 §4.5.9.1) exposes one instance per outgoing
+    coupler, per KNX 03.05.01 §4.5.9.1) exposes one instance per outgoing
     line. This helper returns the first instance found by ascending
     ``object_index``; callers that need a specific routing direction must
     select the instance themselves.
