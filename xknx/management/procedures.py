@@ -33,6 +33,48 @@ non-zero PID.
 """
 
 
+def _derive_in_between_couplers(
+    source: IndividualAddress, target: IndividualAddress
+) -> list[IndividualAddress]:
+    """
+    Enumerate the couplers on the path from ``source`` to ``target``.
+
+    A KNX Individual Address has three parts: ``area`` (4 bit), ``main``
+    (4 bit, the trunk/line subdivision), and ``line`` (8 bit, the device
+    number on the line). Line and area couplers sit at addresses with
+    ``line = 0``:
+
+        - Line Coupler  at  ``area.main.0`` — between trunk and line.
+        - Area Coupler  at  ``area.0.0``    — between backbone and area.
+
+    The enumeration is destination-side only: source-side couplers are
+    not queried because the source on a Management Client is the
+    KNXnet/IP interface itself, whose ``PID_MAX_APDU_LENGTH`` is taken
+    from the local DIB and not via §2.6.2.3.
+
+    Rules:
+        - Same area, same main → no in-between couplers.
+        - Same area, different main → destination line coupler
+          (``target.area.target.main.0``).
+        - Different area → destination area coupler
+          (``target.area.0.0``) plus, when ``target.main != 0`` (target
+          not on the area trunk), the destination line coupler.
+
+    Callers may override this with an explicit coupler list when the
+    topology does not match these defaults (e.g. mixed-medium installs).
+    """
+    if source.area == target.area and source.main == target.main:
+        return []
+    couplers: list[IndividualAddress] = []
+    if source.area != target.area:
+        couplers.append(IndividualAddress(target.area << 12))
+        if target.main != 0:
+            couplers.append(IndividualAddress((target.area << 12) | (target.main << 8)))
+    else:
+        couplers.append(IndividualAddress((target.area << 12) | (target.main << 8)))
+    return couplers
+
+
 async def nm_interface_object_scan(
     connection: P2PConnection, object_type: int
 ) -> int | None:
