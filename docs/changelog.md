@@ -6,6 +6,13 @@ nav_order: 2
 
 # Changelog
 
+# Unreleased
+
+### Management
+
+- Implement KNX 03.05.03 §2.6 *Discovery of maximal frame length*: `nm_discover_max_apdu_length` walks local cEMI peer, target Device Object and in-between couplers (with `DMP_InterfaceObjectScan_R` to locate the Router Object, DD0 short-circuit on Coupler 1.0/1.1 masks, and Device-Object fallback) and returns a `MaxApduResult` describing the minimum APDU length usable end-to-end. Mandatory precondition for any subsequent device configuration procedure.
+- Add `nm_read_max_apdu_length`, `nm_interface_object_scan` helpers and the `MaxApduResult` dataclass to the public `xknx.management` API.
+
 # 3.15.0 Task improvements 2026-02-15
 
 ### Telegram
