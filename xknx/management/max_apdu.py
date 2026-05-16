@@ -114,11 +114,12 @@ def _derive_in_between_couplers(
 
     Rules:
         - Same area, same main → no in-between couplers.
-        - Same area, different main → destination line coupler
-          (``target.area.target.main.0``).
-        - Different area → destination area coupler
-          (``target.area.0.0``) plus, when ``target.main != 0`` (target
-          not on the area trunk), the destination line coupler.
+        - Same area, different main → destination line coupler at
+          ``target_area.target_main.0``.
+        - Different area → destination area coupler at
+          ``target_area.0.0`` plus, when ``target.main != 0`` (target
+          not on the area trunk), the destination line coupler at
+          ``target_area.target_main.0``.
 
     Callers may override this with an explicit coupler list when the
     topology does not match these defaults (e.g. mixed-medium installs).
