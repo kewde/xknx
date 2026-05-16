@@ -21,9 +21,17 @@ from xknx.telegram import (
 from ..conftest import EventLoopClockAdvancer
 
 
-async def _open_connection(xknx: XKNX, address: IndividualAddress) -> P2PConnection:
-    """Open a P2P connection for procedure tests that exercise the live transport."""
-    connection = await xknx.management.connect(address)
+async def _open_connection(
+    xknx: XKNX, address: IndividualAddress, *, rate_limit: int = 0
+) -> P2PConnection:
+    """
+    Open a P2P connection for procedure tests that exercise the live transport.
+
+    ``rate_limit`` defaults to ``0`` (disabled) so that tests chaining many
+    requests do not block on the inter-request throttle. Tests that need to
+    exercise rate-limiting behaviour can override.
+    """
+    connection = await xknx.management.connect(address, rate_limit=rate_limit)
     # discard the TConnect telegram from the call log so the test sees only the
     # telegrams produced by the procedure under test
     xknx.cemi_handler.send_telegram.reset_mock()
@@ -107,6 +115,141 @@ async def test_nm_read_max_apdu_length_property_absent_returns_none() -> None:
                 object_index=0, property_id=56, count=0, start_index=0, data=b""
             ),
         )
+    )
+    assert await task is None
+    await xknx.management.disconnect(target)
+
+
+async def _drive_scan_step(
+    xknx: XKNX,
+    source: IndividualAddress,
+    seq_description: int,
+    seq_value: int,
+    description_pid: int,
+    object_type_value: int | None,
+) -> None:
+    """
+    Feed the ACK + response pair for one iteration of nm_interface_object_scan.
+
+    ``description_pid`` is the PID echoed in A_PropertyDescription_Response. A
+    value of 0 means "no Interface Object at this index" — terminates the
+    outer scan and skips the value-read.
+    ``object_type_value`` is the 2-octet value of PID_OBJECT_TYPE; ``None``
+    encodes "property absent" (count=0, empty data).
+    """
+    xknx.management.process(_incoming_ack(source, seq_description))
+    xknx.management.process(
+        _incoming_response(
+            source,
+            seq_description,
+            apci.PropertyDescriptionResponse(
+                object_index=0,
+                property_id=description_pid,
+                property_index=0,
+            ),
+        )
+    )
+    if description_pid == 0:
+        return
+    await asyncio.sleep(0)
+    if object_type_value is None:
+        data = b""
+        count = 0
+    else:
+        data = object_type_value.to_bytes(2, byteorder="big")
+        count = 1
+    xknx.management.process(_incoming_ack(source, seq_value))
+    xknx.management.process(
+        _incoming_response(
+            source,
+            seq_value,
+            apci.PropertyValueResponse(
+                object_index=0,
+                property_id=1,
+                count=count,
+                start_index=1,
+                data=data,
+            ),
+        )
+    )
+
+
+async def test_nm_interface_object_scan_finds_device_object_at_index_0() -> None:
+    """Device Object (type 0x0000) is found at object_index 0."""
+    xknx = XKNX()
+    xknx.cemi_handler = AsyncMock()
+    target = IndividualAddress("1.1.5")
+    connection = await _open_connection(xknx, target)
+
+    task = asyncio.create_task(procedures.nm_interface_object_scan(connection, 0x0000))
+    await asyncio.sleep(0)
+    await _drive_scan_step(
+        xknx, target, 0, 1, description_pid=1, object_type_value=0x0000
+    )
+    assert await task == 0
+    await xknx.management.disconnect(target)
+
+
+async def test_nm_interface_object_scan_finds_router_object_at_higher_index() -> None:
+    """Router Object (type 0x0006) is found by iterating past the Device Object."""
+    xknx = XKNX()
+    xknx.cemi_handler = AsyncMock()
+    target = IndividualAddress("1.1.0")
+    connection = await _open_connection(xknx, target)
+
+    task = asyncio.create_task(procedures.nm_interface_object_scan(connection, 0x0006))
+    await asyncio.sleep(0)
+    # index 0 is Device Object — does not match Router
+    await _drive_scan_step(
+        xknx, target, 0, 1, description_pid=1, object_type_value=0x0000
+    )
+    await asyncio.sleep(0)
+    # index 1 is Router Object — match
+    await _drive_scan_step(
+        xknx, target, 2, 3, description_pid=1, object_type_value=0x0006
+    )
+    assert await task == 1
+    await xknx.management.disconnect(target)
+
+
+async def test_nm_interface_object_scan_stops_when_description_response_pid_is_zero() -> (
+    None
+):
+    """PID=0 in A_PropertyDescription_Response terminates the scan with None."""
+    xknx = XKNX()
+    xknx.cemi_handler = AsyncMock()
+    target = IndividualAddress("1.1.5")
+    connection = await _open_connection(xknx, target)
+
+    task = asyncio.create_task(procedures.nm_interface_object_scan(connection, 0x0006))
+    await asyncio.sleep(0)
+    # No Interface Object at index 0 — PID=0 terminates the loop
+    await _drive_scan_step(
+        xknx, target, 0, 1, description_pid=0, object_type_value=None
+    )
+    assert await task is None
+    await xknx.management.disconnect(target)
+
+
+async def test_nm_interface_object_scan_skips_objects_without_object_type_property() -> (
+    None
+):
+    """An object whose PID_OBJECT_TYPE returns count=0 is skipped, not matched."""
+    xknx = XKNX()
+    xknx.cemi_handler = AsyncMock()
+    target = IndividualAddress("1.1.5")
+    connection = await _open_connection(xknx, target)
+
+    task = asyncio.create_task(procedures.nm_interface_object_scan(connection, 0x0006))
+    await asyncio.sleep(0)
+    # index 0: object exists but PID_OBJECT_TYPE returns count=0 — skip
+    await _drive_scan_step(
+        xknx, target, 0, 1, description_pid=1, object_type_value=None
+    )
+    await asyncio.sleep(0)
+    # index 1: no more objects
+    await _drive_scan_step(
+        xknx, target, 2, 3, description_pid=0, object_type_value=None
     )
     assert await task is None
     await xknx.management.disconnect(target)
