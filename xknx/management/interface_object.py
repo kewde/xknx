@@ -18,8 +18,6 @@ from xknx.telegram import apci
 if TYPE_CHECKING:
     from xknx.management.management import P2PConnection
 
-# Logger name preserved from the pre-split location so log output is
-# bit-identical to the unrefactored module.
 logger = logging.getLogger("xknx.management.procedures")
 
 INTERFACE_OBJECT_SCAN_LIMIT = 256

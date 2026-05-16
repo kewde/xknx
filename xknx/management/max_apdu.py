@@ -50,8 +50,6 @@ if TYPE_CHECKING:
     from xknx import XKNX
     from xknx.management.management import P2PConnection
 
-# Logger name preserved from the pre-split location so log output is
-# bit-identical to the unrefactored module.
 logger = logging.getLogger("xknx.management.procedures")
 
 NON_EXTENDED_FRAME_MASK_VERSIONS: frozenset[int] = frozenset({0x0910, 0x0911})
