@@ -13,7 +13,7 @@ from unittest.mock import AsyncMock, call
 
 from xknx import XKNX
 from xknx.management import nm_discover_max_apdu_length
-from xknx.management.procedures import _derive_in_between_couplers
+from xknx.management.max_apdu import _derive_in_between_couplers
 from xknx.telegram import (
     IndividualAddress,
     Telegram,

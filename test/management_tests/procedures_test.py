@@ -7,7 +7,7 @@ import pytest
 
 from xknx import XKNX
 from xknx.exceptions import ManagementConnectionError
-from xknx.management import procedures
+from xknx.management import interface_object, max_apdu, procedures
 from xknx.management.management import MANAGAMENT_CONNECTION_TIMEOUT, P2PConnection
 from xknx.telegram import (
     GroupAddress,
@@ -66,7 +66,7 @@ async def test_nm_read_max_apdu_length_returns_value() -> None:
     target = IndividualAddress("1.1.5")
     connection = await _open_connection(xknx, target)
 
-    task = asyncio.create_task(procedures.nm_read_max_apdu_length(connection))
+    task = asyncio.create_task(max_apdu.nm_read_max_apdu_length(connection))
     await asyncio.sleep(0)
 
     expected_request = Telegram(
@@ -103,7 +103,7 @@ async def test_nm_read_max_apdu_length_property_absent_returns_none() -> None:
     target = IndividualAddress("1.1.5")
     connection = await _open_connection(xknx, target)
 
-    task = asyncio.create_task(procedures.nm_read_max_apdu_length(connection))
+    task = asyncio.create_task(max_apdu.nm_read_max_apdu_length(connection))
     await asyncio.sleep(0)
 
     xknx.management.process(_incoming_ack(target, 0))
@@ -181,7 +181,9 @@ async def test_nm_interface_object_scan_finds_device_object_at_index_0() -> None
     target = IndividualAddress("1.1.5")
     connection = await _open_connection(xknx, target)
 
-    task = asyncio.create_task(procedures.nm_interface_object_scan(connection, 0x0000))
+    task = asyncio.create_task(
+        interface_object.nm_interface_object_scan(connection, 0x0000)
+    )
     await asyncio.sleep(0)
     await _drive_scan_step(
         xknx, target, 0, 1, description_pid=1, object_type_value=0x0000
@@ -197,7 +199,9 @@ async def test_nm_interface_object_scan_finds_router_object_at_higher_index() ->
     target = IndividualAddress("1.1.0")
     connection = await _open_connection(xknx, target)
 
-    task = asyncio.create_task(procedures.nm_interface_object_scan(connection, 0x0006))
+    task = asyncio.create_task(
+        interface_object.nm_interface_object_scan(connection, 0x0006)
+    )
     await asyncio.sleep(0)
     # index 0 is Device Object — does not match Router
     await _drive_scan_step(
@@ -221,7 +225,9 @@ async def test_nm_interface_object_scan_stops_when_description_response_pid_is_z
     target = IndividualAddress("1.1.5")
     connection = await _open_connection(xknx, target)
 
-    task = asyncio.create_task(procedures.nm_interface_object_scan(connection, 0x0006))
+    task = asyncio.create_task(
+        interface_object.nm_interface_object_scan(connection, 0x0006)
+    )
     await asyncio.sleep(0)
     # No Interface Object at index 0 — PID=0 terminates the loop
     await _drive_scan_step(
@@ -240,7 +246,9 @@ async def test_nm_interface_object_scan_skips_objects_without_object_type_proper
     target = IndividualAddress("1.1.5")
     connection = await _open_connection(xknx, target)
 
-    task = asyncio.create_task(procedures.nm_interface_object_scan(connection, 0x0006))
+    task = asyncio.create_task(
+        interface_object.nm_interface_object_scan(connection, 0x0006)
+    )
     await asyncio.sleep(0)
     # index 0: object exists but PID_OBJECT_TYPE returns count=0 — skip
     await _drive_scan_step(
