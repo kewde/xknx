@@ -1,5 +1,5 @@
 """
-NM_DomainAddressSerialNumber_Write — KNX 03.05.02 §2.12 (PDF p. 25).
+NM_DomainAddressSerialNumber_Write — KNX 03.05.02 §2.12 (PDF p. 24).
 
 Spec text (verbatim from spec):
 
@@ -10,16 +10,13 @@ Spec text (verbatim from spec):
     locally.
     NOTE 1           This is relevant mainly for the use case where the MaC is connected via satellite to a Tunnelling
     Server in the installation.
-
     NM_DomainAddressSerialNumber_Write(/* [in] */ SerNo, /* [in] */ DoANew)
                SerNo:      The KNX Serial Number of the device.
                DoANew: The Domain Address to be assigned to the device. In case of IP devices this is a
                        4 octet DoA consisting of the KNXnet/IP routing multicast address (21 octet
                        DoA can be loaded only with the secure procedure in 2.13).
-
-    Procedure:
           1.    If there is a KNXnet/IP Router between the MaC and the MaS, the MaC sets the IP System
-                Broadcast Routing Mode of the router to "Enable" by sending an
+                Broadcast Routing Mode of the router to “Enable” by sending an
                 A_FunctionPropertyCommand(…) or A_FunctionPropertyExtCommand(…).
           2.    The MaC sends an A_DomainAddressSerialNumber_Write with SerNo and DoANew. If the
                 MaC is on the same IP network, the Frame shall be sent as IP system broadcast; otherwise
@@ -27,20 +24,19 @@ Spec text (verbatim from spec):
           3.    To verify, the MaC waits 1 second and then sends repeatedly an
                 A_IndividualAddressSerialNumber_Read with SerNo on broadcast until the MaS responds
                 with A_IndividualAddressSerialNumber_Response-PDU or the timeout elapses (see [01]
-                clause 4.3.5.3.4 "A_DomainAddressSerialNumber_Write").
-          4.    If the IP System Broadcast Routing Mode of a router has been set to "Enable" in step 1, set it
-                back to "Disable" by sending an A_FunctionPropertyCommand(…) or
+                clause 4.3.5.3.4 “A_DomainAddressSerialNumber_Write”).
+          4.    If the IP System Broadcast Routing Mode of a router has been set to “Enable” in step 1, set it
+                back to “Disable” by sending an A_FunctionPropertyCommand(…) or
                 A_FunctionPropertyExtCommand(…).
-
     Error handling
     If no A_IndividualAddressSerialNumber_Response-PDU in 3 is received within the timeout (see [01]
-    clause 4.3.5.3.4 "A_DomainAddressSerialNumber_Write"), the MaC first repeats from 2 after a delay
+    clause 4.3.5.3.4 “A_DomainAddressSerialNumber_Write”), the MaC first repeats from 2 after a delay
     of 1 second.
     If this entire Management Procedure fails, the MaC (ETS) shall not automatically repeat it. This may
     only be repeated after indication or confirmation by the user.
 
 Inputs (from spec):
-    [in] SerNo, [in] DoANew
+    (see body)
 """
 
 from __future__ import annotations

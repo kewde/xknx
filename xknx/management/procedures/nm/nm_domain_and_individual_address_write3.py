@@ -1,12 +1,12 @@
 """
-NM_DomainAndIndividualAddress_Write3 — KNX 03.05.02 §2.11 (PDF p. 23).
+NM_DomainAndIndividualAddress_Write3 — KNX 03.05.02 §2.11 (PDF p. 24).
 
 Spec text (verbatim from spec):
 
-    [spec text unavailable]
+    This Network Management Procedure is not yet specified.
 
 Inputs (from spec):
-    (none specified in spec)
+    (see body)
 """
 
 from __future__ import annotations

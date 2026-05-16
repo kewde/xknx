@@ -1,7 +1,25 @@
 """
-NM_IndividualAddress_Reset — KNX 03.05.02 §2.18 (PDF p. 33).
+NM_IndividualAddress_Reset — KNX 03.05.02 §2.18 (PDF p. 32).
 
-Spec pseudocode (verbatim from spec):
+Spec text (verbatim from spec):
+
+    Use
+    This Network Management Procedure shall be used to reset the Individual Address of one or more
+    devices in which Programming Mode is active to the default Individual Address FFFFh.
+    Used Application Layer Services for Management
+          •      A_IndividualAddress_Write
+          •      A_Restart
+
+          •   A_IndividualAddress_Read
+          •   A_Connect
+          •   A_Disconnect
+
+    Parameters of the Management Procedure
+    This Management Procedure does not require any procedure parameters.
+    Sequence
+    Management                                                                   Network /                  remark
+    Client                                                                       Management
+                                                                                 Server
 
     repeat
        reset Individual Address of all devices in which the Programming Mode is active
@@ -36,7 +54,7 @@ Spec pseudocode (verbatim from spec):
     A_IndividualAddress_Read.Lcon and the A_IndividualAddress_Response-PDU.
 
 Inputs (from spec):
-    None (procedure resets all devices in Programming Mode)
+    (see body)
 """
 
 from __future__ import annotations

@@ -1,5 +1,5 @@
 """
-NM_DomainAddress_Read — KNX 03.05.02 §2.7 (PDF p. 18).
+NM_DomainAddress_Read — KNX 03.05.02 §2.7 (PDF p. 17).
 
 Spec text (verbatim from spec):
 
@@ -8,26 +8,22 @@ Spec text (verbatim from spec):
     devices in which Programming Mode is active.
     This procedure works independently of the configuration of the Domain Address and the Individual
     Address of the Router.
-
     Used Application Layer Services for Management
        • A_DomainAddress_Read
-
     Parameters of the Management Procedure
     NM_DomainAddress_Read (/* [out] */ individual_addresses[], /* [out] */ domain_addresses[])
           individual_addresses[]:     The collection of all the Individual Addresses of the devices in which
                                       Programming Mode is active.
           domain_addresses[]:         The collection of all theDomain Addresses of the devices in which
                                       Programming Mode is active.
-
     Variables
           IAn:    The IA of one device n that responds to the A_DomainAddress_Read-PDU. The
                   Management Client shall collect all IAn of the individual responses and report these via
                   individual_addresses[].
 
-          DoAn: The DoAn of one device n that responds to the A_DomainAddress_Read-PDU. The
-                Management Client shall collect all DoAn of the individual responses and report these
-                via domain_addresses[].
-
+       DoAn: The DoAn of one device n that responds to the A_DomainAddress_Read-PDU. The
+             Management Client shall collect all DoAn of the individual responses and report these
+             via domain_addresses[].
     Sequence
     Management                                                             Network /                  remark
     Client                                                                 Management
@@ -55,7 +51,7 @@ Spec text (verbatim from spec):
     The Management Client shall not evaluate Layer-2 repetitions.
 
 Inputs (from spec):
-    [out] individual_addresses[], [out] domain_addresses[]
+    (see body)
 """
 
 from __future__ import annotations
