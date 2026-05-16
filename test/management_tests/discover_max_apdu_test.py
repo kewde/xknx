@@ -77,6 +77,18 @@ def test_cross_line_same_area_yields_destination_line_coupler() -> None:
     ]
 
 
+def test_same_area_target_on_trunk_yields_no_couplers() -> None:
+    """
+    Source on a line, target on the same area's trunk: no probable couplers.
+
+    The path's only coupler is the source line coupler (the local cEMI
+    peer covered by §2.6.2.1), so derivation emits nothing.
+    """
+    source = IndividualAddress("1.1.5")
+    target = IndividualAddress("1.0.5")
+    assert _derive_in_between_couplers(source, target) == []
+
+
 def test_cross_area_yields_src_area_then_dst_area_then_dst_line() -> None:
     """
     A cross-area path traverses src area, dst area, then dst line couplers.

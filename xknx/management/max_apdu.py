@@ -154,9 +154,7 @@ def _derive_in_between_couplers(
         if source.area != 0:
             couplers.append(IndividualAddress(source.area << 12))
         couplers.append(IndividualAddress(target.area << 12))
-        if target.main != 0:
-            couplers.append(IndividualAddress((target.area << 12) | (target.main << 8)))
-    else:
+    if target.main != 0:
         couplers.append(IndividualAddress((target.area << 12) | (target.main << 8)))
     return couplers
 
