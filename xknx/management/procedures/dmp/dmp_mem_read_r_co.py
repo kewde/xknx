@@ -44,12 +44,47 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from xknx.telegram import apci
+
 if TYPE_CHECKING:
-    from xknx import XKNX
+    from xknx.management.management import P2PConnection
+
+DEFAULT_MAX_CHUNK_SIZE = 12
 
 
-async def dmp_mem_read_r_co(xknx: XKNX) -> None:
-    """DMP_MemRead_RCo — see module docstring for the verbatim spec text."""
-    raise NotImplementedError(
-        "DMP_MemRead_RCo (KNX 03.05.02 §3.18.2) — implementation pending"
-    )
+async def dmp_mem_read_r_co(
+    connection: P2PConnection,
+    address: int,
+    count: int,
+    max_chunk_size: int = DEFAULT_MAX_CHUNK_SIZE,
+) -> bytes:
+    """
+    Read a contiguous block of memory from a KNX device.
+
+    DMP_MemRead_RCo — KNX 03.05.02 §3.18.2. Requires an established
+    connection (DM_Connect must be executed first).
+
+    :param connection: Active P2P connection to the device
+    :param address: Start address in device memory (0-65535)
+    :param count: Number of bytes to read
+    :param max_chunk_size: Max bytes per request (default 12 for standard frames)
+    :return: The data read from device memory
+    """
+    if count <= 0:
+        return b""
+
+    data = bytearray()
+    remaining = count
+    current_address = address
+
+    while remaining > 0:
+        chunk_size = min(remaining, max_chunk_size)
+        response = await connection.request(
+            payload=apci.MemoryRead(address=current_address, count=chunk_size),
+            expected=apci.MemoryResponse,
+        )
+        data.extend(response.payload.data)
+        current_address += chunk_size
+        remaining -= chunk_size
+
+    return bytes(data)

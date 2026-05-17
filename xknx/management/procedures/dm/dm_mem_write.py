@@ -184,14 +184,6 @@ Inputs (from spec):
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from xknx.management.procedures.dmp.dmp_mem_write_r_co import dmp_mem_write_r_co
 
-if TYPE_CHECKING:
-    from xknx import XKNX
-
-
-async def dm_mem_write(xknx: XKNX) -> None:
-    """DM_MemWrite — see module docstring for the verbatim spec text."""
-    raise NotImplementedError(
-        "DM_MemWrite (KNX 03.05.02 §3.16) — implementation pending"
-    )
+__all__ = ["dmp_mem_write_r_co"]

@@ -52,14 +52,64 @@ Inputs (from spec):
 
 from __future__ import annotations
 
+import asyncio
 from typing import TYPE_CHECKING
 
+from xknx.exceptions import ManagementConnectionError
+from xknx.telegram import apci
+
 if TYPE_CHECKING:
-    from xknx import XKNX
+    from xknx.management.management import P2PConnection
+
+DEFAULT_MAX_CHUNK_SIZE = 12
 
 
-async def dmp_mem_write_r_co(xknx: XKNX) -> None:
-    """DMP_MemWrite_RCo — see module docstring for the verbatim spec text."""
-    raise NotImplementedError(
-        "DMP_MemWrite_RCo (KNX 03.05.02 §3.16.2) — implementation pending"
-    )
+async def dmp_mem_write_r_co(
+    connection: P2PConnection,
+    address: int,
+    data: bytes,
+    verify: bool = False,
+    write_delay: float = 0,
+    max_chunk_size: int = DEFAULT_MAX_CHUNK_SIZE,
+) -> None:
+    """
+    Write a contiguous block of data to device memory.
+
+    DMP_MemWrite_RCo — KNX 03.05.02 §3.16.2. Requires an established
+    connection (DM_Connect must be executed first).
+
+    :param connection: Active P2P connection to the device
+    :param address: Start address in device memory (0-65535)
+    :param data: Data to write
+    :param verify: If True, read back and verify each chunk after writing
+    :param write_delay: Delay in seconds after each write when verify=False.
+        Required for device to finish programming. Value is device-dependent
+        (see KNX spec [08]). Ignored when verify=True.
+    :param max_chunk_size: Max bytes per request (default 12 for standard frames)
+    :raises ManagementConnectionError: If verify is enabled and readback differs
+    """
+    if not data:
+        return
+
+    remaining = memoryview(data)
+    current_address = address
+
+    while remaining:
+        chunk = bytes(remaining[:max_chunk_size])
+        await connection._send_data(apci.MemoryWrite(address=current_address, data=chunk))  # noqa: SLF001
+
+        if verify:
+            response = await connection.request(
+                payload=apci.MemoryRead(address=current_address, count=len(chunk)),
+                expected=apci.MemoryResponse,
+            )
+            if response.payload.data != chunk:
+                raise ManagementConnectionError(
+                    f"Memory verify failed at address 0x{current_address:04X}: "
+                    f"expected {chunk.hex()}, got {response.payload.data.hex()}"
+                )
+        elif write_delay > 0:
+            await asyncio.sleep(write_delay)
+
+        current_address += len(chunk)
+        remaining = remaining[max_chunk_size:]
