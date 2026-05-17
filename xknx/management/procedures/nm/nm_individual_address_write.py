@@ -11,93 +11,70 @@ Spec text (verbatim from spec):
     and shall deactivate the Programming Mode by executing a restart of the device.
     When applicable this procedure shall be preceded by the configuration of the Individual Addresses of
     the installed Routers and the Domain Addresses.
+
     Used Application Layer Services for Management
-       • A_IndividualAddress_Read
-       • A_IndividualAddress_Write
-       • A_DeviceDescriptor_Read
-       • A_Restart
-       • A_Connect
+    - A_IndividualAddress_Read
+    - A_IndividualAddress_Write
+    - A_DeviceDescriptor_Read
+    - A_Restart
+    - A_Connect
+
     Parameters of the Management Procedure
     NM_IndividualAddress_Write(/* [in] */ IA_new)
         IA_new: The new IA that shall be assigned to the device in Programming Mode.
+
     Service parameters
-       None.
+        None.
+
     Variables
-          IA_current: The current IA of the device that is in Programming Mode prior to the assignment
-                      of IA_new.
+        IA_current: The current IA of the device that is in Programming Mode prior to the assignment
+                    of IA_new.
 
     Sequence
-    Management                                                               Network /                  remark
-    Client                                                                   Management
-                                                                             Server
-    1. Verify whether the Individual Address IA_new is already occupied
-       on the network.
-                                    A_Connect-PDU
-                            (destination_address = IA_new)
 
-    if negative A_Connect.Lcon ⇒ IA_new is not occupied; end procedure.
-    else (this is, a positive A_Connect.Lcon is received)
-                                                                                  If the device that occupies the IA IA_new
-                                                                              does not support Transport Layer connections,
-                                                                                          it shall send a T_Disconnect-PDU.
-                                   A_Disconnect-PDU
-                                          ()
-
-    if A_Disconnect-PDU is received then IA_new shall be regarded as occupied; end procedure.
-    else (no A_Disconnect-PDU is received)
-                                                              If a device that occupies IA_new is present on the network,
-                                                                           and does support Transport Layer connections,
-                                                                                  it shall have no other reaction on the bus
-                                                 than the Layer-2 acknowledge that initiates the above A_Connect.Lcon
-        The A_DeviceDescriptor_Read-PDU shall use DD0.
-                            A_DeviceDescriptor_Read-PDU
-                            (destination_address = IA_new,
-                               descriptor_type = 0000h)
-
-                          A_DeviceDescriptor_Response-PDU
-                          (descriptor_type, device_descriptor)
-    a)
-    If the Management Client receives an A_DeviceDescriptor_Response-PDU it shall
-    conclude that the Individual Address IA_new is occupied.
-    If no A_DeviceDescriptor_Response-PDU is received after time-out ⇒ IA_new is not
-    occupied
-    endif
-                                  A_Disconnect-PDU
-                            (destination_address = IA_new)
-
-    2. wait until device is in Programming Mode:
-    repeat until one A_IndividualAddress_Response-PDU is received
-                           A_IndividualAddress_Read-PDU
-                                         ()
-
-                         A_IndividualAddress_Response-PDU                                 one or more responses may be
-                            (source_address = IA_current)                                 received from different devices
-                                                                                          time-out: 1 s
-                                               ...
-
-    if more than one response is received ⇒ more than one device in Programming Mode
-    end repeat
-
-    3.set Individual Address
-    if IA_new!= IA_current
-                           A_IndividualAddress_Write-PDU
-                              (new_address = IA_new)
-
-    endif
-    4. verify and deactivate programming mode:
-                                       A_Connect-PDU
-                               (destination_address = IA_new)
-
-                            A_DeviceDescriptor_Read-PDU
-                               (descriptor_type = 00h)
-
-                          A_DeviceDescriptor_Response-PDU
-                          (descriptor_type, device_descriptor)
-    b)
-                                      A_Restart-PDU
-                                            ()
-
-    Abort the connection of the client side Transport Layer.
+    ```mermaid
+    sequenceDiagram
+        participant C as Management Client
+        participant S as Network / Management Server
+        Note over C,S: 1. Verify whether the Individual Address IA_new is already occupied on the network.
+        C->>S: A_Connect-PDU (destination_address = IA_new)
+        alt negative A_Connect.Lcon ⇒ IA_new is not occupied; end procedure.
+        else this is, a positive A_Connect.Lcon is received
+            Note right of S: If the device that occupies the IA IA_new does not support Transport Layer connections, it shall send a T_Disconnect-PDU.
+            S->>C: A_Disconnect-PDU ()
+            Note over C,S: if A_Disconnect-PDU is received then IA_new shall be regarded as occupied; end procedure.
+            alt no A_Disconnect-PDU is received
+                Note right of S: If a device that occupies IA_new is present on the network, and does support Transport Layer connections, it shall have no other reaction on the bus than the Layer-2 acknowledge that initiates the above A_Connect.Lcon
+                Note over C,S: The A_DeviceDescriptor_Read-PDU shall use DD0.
+                C->>S: A_DeviceDescriptor_Read-PDU (destination_address = IA_new, descriptor_type = 0000h)
+                S->>C: A_DeviceDescriptor_Response-PDU (descriptor_type, device_descriptor)
+                Note over C,S: a)
+                Note over C,S: If the Management Client receives an A_DeviceDescriptor_Response-PDU it shall conclude that the Individual Address IA_new is occupied.
+                Note over C,S: If no A_DeviceDescriptor_Response-PDU is received after time-out ⇒ IA_new is not occupied
+            end
+        end
+        C->>S: A_Disconnect-PDU (destination_address = IA_new)
+        Note over C,S: 2. wait until device is in Programming Mode:
+        Note over C,S: repeat until one A_IndividualAddress_Response-PDU is received
+        C->>S: A_IndividualAddress_Read-PDU ()
+        S->>C: A_IndividualAddress_Response-PDU (source_address = IA_current)
+        Note right of S: one or more responses may be received from different devices
+        Note right of S: time-out: 1 s
+        Note over C,S: ...
+        Note over C,S: if more than one response is received ⇒ more than one device in Programming Mode
+        Note over C,S: end repeat
+        Note over C,S: 3.set Individual Address
+        opt IA_new!= IA_current
+            C->>S: A_IndividualAddress_Write-PDU (new_address = IA_new)
+        end
+        Note over C,S: 4. verify and deactivate programming mode:
+        C->>S: A_Connect-PDU (destination_address = IA_new)
+        C->>S: A_DeviceDescriptor_Read-PDU (descriptor_type = 00h)
+        S->>C: A_DeviceDescriptor_Response-PDU (descriptor_type, device_descriptor)
+        Note over C,S: b)
+        C->>S: A_Restart-PDU ()
+        Note over C,S: Abort the connection of the client side Transport Layer.
+    ```
 
     Exception handling
     to 1.: If an A_Disconnect-PDU is received instead of an A_DeviceDescriptor_Response-PDU, than a
@@ -111,13 +88,13 @@ Spec text (verbatim from spec):
            responses during this time-out.
            This procedure shall wait until exactly one device is in Programming Mode 2).
             Following case may occur at this point:
-            •    A device with the Individual Address IA_new to be assigned exists, but it is not the one
+            -    A device with the Individual Address IA_new to be assigned exists, but it is not the one
                  that is in Programming Mode.
                  ⇒ The Management Client shall not continue with the Management Procedure.
-            •    A device with the Individual Address IA_new to be assigned exists, and it is the one that is
+            -    A device with the Individual Address IA_new to be assigned exists, and it is the one that is
                  in Programming Mode.
                  ⇒ The Management Client shall continue with the Management Procedure.
-            •    No device with the Individual Address IA_new to be assigned exists.
+            -    No device with the Individual Address IA_new to be assigned exists.
                  ⇒ The Management Client shall continue with the Management Procedure.
     to 4.: If no A_DeviceDescriptor_Response-PDU is received, than the programming of the Individual
            Address may have failed, or the system (Router) is not configured correctly.

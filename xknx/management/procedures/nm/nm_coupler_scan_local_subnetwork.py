@@ -13,57 +13,49 @@ Spec text (verbatim from spec):
                      /* [in] */ hop_count_type_req, /* [in] */ object_type, /* [in] */ PID,
                      /* [in] */ test_info, /* [in] */ comm_mode_res, /* [in] */ hop_count_type_res,
                      /* [out] */ test_result)
-        ASAP:                                  not applicable: the communication mode of the request is broadcast
-        comm_mode_req                          point-to-all-points, connectionless (broadcast)
-        hop_count_type_req:                    Value of the hop_count that shall be used by the Management Client
-                                               for the transmission of the A_NetworkParameter_Read-PDU.
-                                               0: to find the presence of any Coupler in the local Subnetwork.
-        object_type:                           6 = Router Object
-        PID:                                   01 = PID_OBJECT_TYPE
-        test_info:                             octet 11:         00h
-        comm_mode_res:                         point-to-all-points, connectionless (broadcast)
-                                               • The response shall be sent on the Medium Interface of the
-                                                    Coupler on which the request has arrived.
-                                               • The response may additionally be sent on further Medium
-                                                    Interfaces of the Coupler. This is the recommended behaviour.
-        hop_count_type_res:                    Network Layer parameter
-        test_result:                           octet 12 a 13:    0006h = Object Type of the Router Object
+        ASAP:                    not applicable: the communication mode of the request is broadcast
+        comm_mode_req            point-to-all-points, connectionless (broadcast)
+        hop_count_type_req:      Value of the hop_count that shall be used by the Management Client
+                                 for the transmission of the A_NetworkParameter_Read-PDU.
+                                 0: to find the presence of any Coupler in the local Subnetwork.
+        object_type:             6 = Router Object
+        PID:                     01 = PID_OBJECT_TYPE
+        test_info:               octet 11: 00h
+        comm_mode_res:           point-to-all-points, connectionless (broadcast)
+                                 - The response shall be sent on the Medium Interface of the
+                                     Coupler on which the request has arrived.
+                                 - The response may additionally be sent on further Medium
+                                     Interfaces of the Coupler. This is the recommended behaviour.
+        hop_count_type_res:      Network Layer parameter
+        test_result:             octet 12 a 13: 0006h = Object Type of the Router Object
 
     Used Application Layer services for Management
-        •      A_NetworkParameter_Read
+        - A_NetworkParameter_Read
+
     Sequence
-    Management                                                                        Network /                      remark
-    Client                                                                            Management
-                                                                                      Server
 
-                            A_NetworkParameter_Read-PDU
-                     (comm_mode_req = point-to-point connectionless,
-                              object_type = Router Object,
-                       PID = PID_OBJECT_TYPE, test_info = 00h)
+    ```mermaid
+    sequenceDiagram
+        participant C as Management Client
+        participant S as Network / Management Server
+        C->>S: A_NetworkParameter_Read-PDU (comm_mode_req = point-to-point connectionless, object_type = Router Object, PID = PID_OBJECT_TYPE, test_info = 00h)
+        Note right of S: If the MaS is a Coupler, then it shall at least send a response on the Medium Interface on which the request has arrived; it should send additional responses on the other Medium Interface(s)
+        Note right of S: The response(s) shall contain Object Type of the Router Object.
+        Note right of S: If the MaS is not a Coupler, then it shall not respond.
+        S->>C: A_NetworkParameter_Response-PDU (comm_mode_res = point-to-all-points connectionless, object_type = Router Object, PID = 01h, test_info = 00h, test_result = Object Type of the Router Object = 0006h).
+    ```
 
-                                                           If the MaS is a Coupler, then it shall at least send a response on the
-                                                           Medium Interface on which the request has arrived; it should send
-                                                           additional responses on the other Medium Interface(s)
-                                                           The response(s) shall contain Object Type of the Router Object.
-                                                           If the MaS is not a Coupler, then it shall not respond.
+    2.23.5.2 Management Server support
+    - The MaS shall verify that the test_info equals 0. If this is not the case, the MaS shall ignore the
+        request.
+    - If the MaS (Coupler) implements more than one Router Object, then it shall only give one single
+        response, on the Medium Interface 7) on which the request is received.
 
-                                A_NetworkParameter_Response-PDU
-                        (comm_mode_res = point-to-all-points connectionless
-                               object_type = Router Object, PID = 01h,
-                       test_info = 00h, test_result = Object Type of the Router
-                                           Object = 0006h).
-
-      2.23.5.2 Management Server support
-      •       The MaS shall verify that the test_info equals 0. If this is not the case, the MaS shall ignore the
-              request.
-      •       If the MaS (Coupler) implements more than one Router Object, then it shall only give one single
-              response, on the Medium Interface 7) on which the request is received.
-
-      2.23.5.3 Management Client support
-      •       The MaC shall take into account that the requirements to the MaS do not require that the MaS
-              (Coupler) be used as a Router (Line Coupler or Backbone Coupler), this is, this Management
-              Procedure will be responded upon as well by the Coupler implementations configured as KNX
-              TP1 Bridge or as KNX TP1 Repeater.
+    2.23.5.3 Management Client support
+    - The MaC shall take into account that the requirements to the MaS do not require that the MaS
+        (Coupler) be used as a Router (Line Coupler or Backbone Coupler), this is, this Management
+        Procedure will be responded upon as well by the Coupler implementations configured as KNX
+        TP1 Bridge or as KNX TP1 Repeater.
 
 Inputs (from spec):
     (see body)

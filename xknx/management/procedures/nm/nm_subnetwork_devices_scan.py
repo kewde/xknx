@@ -11,39 +11,35 @@ Spec text (verbatim from spec):
     A_Disconnect-PDU is received shall be considered as existing on the Subnetwork.
     For this procedure the Individual Address of the used Routers and the Domain Address have to be
     configured.
+
     Used Application Layer Services for Management
-          • A_Connect
+    - A_Connect
 
     Parameters of the Management Procedure
     NM_SubnetworkDevices_Scan(/* [in] */ SNA, /* [out] */ DA[])
-      SNA:                   Subnetwork Address of the Subnetwork in which the occupied
-                             Individual Addresses are to be scanned.
-      DA[]:                  The collection of all Device Addresses of the devices discovered in
-                             the investigated Subnetwork.
+        SNA:  Subnetwork Address of the Subnetwork in which the occupied
+              Individual Addresses are to be scanned.
+        DA[]: The collection of all Device Addresses of the devices discovered in
+              the investigated Subnetwork.
 
     Variables
-          DA_Current:           The current Device Address of which it will be checked whether a device
-                                with this Device Address exists on the Subnetwork that is being checked.
+        DA_Current: The current Device Address of which it will be checked whether a device
+                    with this Device Address exists on the Subnetwork that is being checked.
 
     Sequence
-    Management                                                            Network /               remark
-    Client                                                                Management
-                                                                          Server
 
-    for (DA_Current = 0; DA_Current = 255; DA_Current = DA_Current+1)
-                                    A_Connect-PDU
-                           (destination_address.SNA =SNA,
-                        destination_address.DA = DA_Current)
-
-                                      delay for 0,1 s
-                                      collect all
-                                  A_Disconnect-PDU()
-
-       The Device Address part of all possible received
-       A_Disconnect-PDUs shall be collected in DA[].
-    endfor
-                 wait longer Transport Layer time-out (>6 s) after last
-                                sent A_Connect-PDY
+    ```mermaid
+    sequenceDiagram
+        participant C as Management Client
+        participant S as Network / Management Server
+        loop for DA_Current = 0 to 255
+            C->>S: A_Connect-PDU (destination_address.SNA = SNA, destination_address.DA = DA_Current)
+            Note over C: delay for 0.1 s
+            S->>C: A_Disconnect-PDU()
+            Note over C: collect Device Address from A_Disconnect-PDU into DA[]
+        end
+        Note over C: wait longer Transport Layer time-out (>6 s) after last sent A_Connect-PDU
+    ```
 
 Inputs (from spec):
     (see body)

@@ -4,16 +4,20 @@ DMP_IndividualAddressRead_LEmi1 — KNX 03.05.02 §3.9.2 (PDF p. 91).
 Spec text (verbatim from spec):
 
     This Management Procedure shall use the local communication with EMI 1.
+
     Used EMI-services for Management
-       • PC_Get_Value.req
+    - PC_Get_Value.req
+
     Sequence
-    Management                                                              Management                 remark
-    Client                                                                  Server
 
-                     PC_Get_Value.req (Addr = 117h, Length = 2)
-
-                                 PC_Get_Value.con                                        different or no data received
-                       (Addr = 117h, Length = 2, Data = PPPP)                            ⇒ error
+    ```mermaid
+    sequenceDiagram
+        participant C as Management Client
+        participant S as Management Server
+        C->>S: PC_Get_Value.req (Addr = 117h, Length = 2)
+        S->>C: PC_Get_Value.con (Addr = 117h, Length = 2, Data = PPPP)
+        Note right of S: different or no data received ⇒ error
+    ```
 
     Exception handling
     The general exception handling shall apply.

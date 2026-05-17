@@ -10,43 +10,39 @@ Spec text (verbatim from spec):
     stopped by the Abort command.
 
     Used Application Layer messages for management
-    • A_FunctionPropertyCommand-PDU(destination_address, object_index, Property_id, data)
-    • A_FunctionPropertyState_Response-PDU(destination_address, object_index, Property_id,
+    - A_FunctionPropertyCommand-PDU(destination_address, object_index, Property_id, data)
+    - A_FunctionPropertyState_Response-PDU(destination_address, object_index, Property_id,
       return_code)
 
     Variables in FTP_Abort
-          Server IA                       Individual Address of the FTP Server
-          File Server OI                  Object Index of the File Server Object in the Management Server.
-          Client IA                       Individual Address of the FTP Client.
+        Server IA           Individual Address of the FTP Server
+        File Server OI      Object Index of the File Server Object in the Management Server.
+        Client IA           Individual Address of the FTP Client.
 
     Sequence
-    Management                                                            Management              remark
-    Client                                                                Server
 
-                            A_FunctionPropertyCommand-PDU
-                    (Server IA, File Server OI, PID_FILE_COMMAND,
-                                        data = Abort)
-
-                          A_FunctionPropertyState_Response-PDU
-                 (Client IA, File Server OI, PID_FILE_COMMAND, Return
-                                             Code)
-
-    if the Return Code is “Command Successful”, the command was executed correctly
-    else an error shall be reported.
+    ```mermaid
+    sequenceDiagram
+        participant C as Management Client
+        participant S as Management Server
+        C->>S: A_FunctionPropertyCommand-PDU (Server IA, File Server OI, PID_FILE_COMMAND, data = Abort)
+        S->>C: A_FunctionPropertyState_Response-PDU (Client IA, File Server OI, PID_FILE_COMMAND, Return Code)
+        Note over C,S: if the Return Code is "Command Successful", the command was executed correctly else an error shall be reported.
+    ```
 
     8.12 hTTP_GetFile
     Use
     This Management Procedure shall be used to read a file in hTTP mode from a File Server.
-    The procedure shall be identical to 8.2 “FTP_RetrieveFile”.
-    The Content-Type shall be returned with the Return Code “Command successful”.
+    The procedure shall be identical to 8.2 "FTP_RetrieveFile".
+    The Content-Type shall be returned with the Return Code "Command successful".
 
     8.13 hTTP_PostFile
     Use
     This Management Procedure shall be used to write a file in hTTP mode to a File Server.
-    The procedure shall be identical to 8.3 “FTP_StoreFile”.
+    The procedure shall be identical to 8.3 "FTP_StoreFile".
     the specification of the S-A_Sync-service in [03]
     the requirements on the challenge in the specification of the S-A_Sync-service in [03]
-    “Sequence Number for Tool Access” in [05]
+    "Sequence Number for Tool Access" in [05]
     PID_SECURITY_INDIVIDUAL_ADDRESS_TABLE in [05]
 
 Inputs (from spec):

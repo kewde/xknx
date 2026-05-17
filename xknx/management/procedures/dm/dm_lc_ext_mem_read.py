@@ -10,20 +10,20 @@ Spec text (verbatim from spec):
     A DM_Connect shall be executed before executing this Management Procedure.
     This device Management Procedure shall not be used for further developments of Management
     Servers.
-    DM_LCExtMemRead                             (flags, dataBlockStartAddress, deviceStartAddress,
-                                                deviceEndAddress, data)
-          flags                         bit 0    location of data
-                                                   0: in data block
-                                                   1: -
-                                       All other bits are reserved. These shall be set to 0. This shall be
-                                       tested by the Management Client.
-          dataBlockStartAddress        specifies the address where the data are located in the data block.
-          deviceStartAddress           address of first memory octet that is read by this Management
-                                       Procedure
-          deviceEndAddress             address of the last memory octet that is read by this Management
-                                       Procedure
-          data                         the data that are read by this Management Procedure. The data are
-                                       stored in the data block.
+    DM_LCExtMemRead (flags, dataBlockStartAddress, deviceStartAddress,
+                     deviceEndAddress, data)
+        flags                    bit 0    location of data
+                                            0: in data block
+                                            1: -
+                                 All other bits are reserved. These shall be set to 0. This shall be
+                                 tested by the Management Client.
+        dataBlockStartAddress    specifies the address where the data are located in the data block.
+        deviceStartAddress       address of first memory octet that is read by this Management
+                                 Procedure
+        deviceEndAddress         address of the last memory octet that is read by this Management
+                                 Procedure
+        data                     the data that are read by this Management Procedure. The data are
+                                 stored in the data block.
 
     3.43.2 Procedure: DMP_LCExtMemRead_Rco
     This Management Procedure shall use the connection oriented communication mode.
@@ -33,27 +33,27 @@ Spec text (verbatim from spec):
     possibly the last PDU, shall have a data field (ASDU) with a size equal to the maximum size that can
     be transported over the communication path consisting of the Management Client, the Management
     Server and Couplers and Routers in between these two.
-         -       If the Management Server does not support the L_Data_Extended Frame format, then this
-                 maximal size shall be 11 octets.
-         -       If the Management Server supports L_Data_Extended Frames, then the maximal size shall
-                 be adapted in function of the capabilities of the Management Server and possible Couplers
-                 and Routers in the communication path to the Management Client. This is specified in [06].
+        - If the Management Server does not support the L_Data_Extended Frame format, then this
+          maximal size shall be 11 octets.
+        - If the Management Server supports L_Data_Extended Frames, then the maximal size shall
+          be adapted in function of the capabilities of the Management Server and possible Couplers
+          and Routers in the communication path to the Management Client. This is specified in [06].
     Used Application Layer Services for Management
-        •     A_FilterTable_Read
+    - A_FilterTable_Read
 
     Sequence
-    Management                                                            Management                 remark
-    Client                                                                Server
-                                A_FilterTable_Open-PDU
 
-    for each data block (data size ≤ maximal size), until all data are transmitted
-                              A_FilterTable_Read-PDU
-                                    (Addr, Length)
-
-                              A_FilterTable_Response-PDU                               A_Disconnect.ind ⇒
-                                  (Addr, Length, Data)                                 error,
-                                                                                       no data received ⇒ error
-    endfor
+    ```mermaid
+    sequenceDiagram
+        participant C as Management Client
+        participant S as Management Server
+        C->>S: A_FilterTable_Open-PDU
+        Note over C,S: for each data block (data size ≤ maximal size), until all data are transmitted
+        C->>S: A_FilterTable_Read-PDU (Addr, Length)
+        S->>C: A_FilterTable_Response-PDU (Addr, Length, Data)
+        Note right of S: A_Disconnect.ind => error, no data received => error
+        Note over C,S: endfor
+    ```
 
     Exception handling
     The general exception handling shall apply.

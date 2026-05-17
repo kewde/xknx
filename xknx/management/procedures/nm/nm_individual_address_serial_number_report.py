@@ -7,25 +7,24 @@ Spec text (verbatim from spec):
     This Management Procedure shall be used by a Management Server in order to announce its (new)
     Individual Address. The Management Server shall be identified by its KNX Serial Number.
     The communication mode shall be broadcast. The hop_count_type shall be the default Network Layer
-    value. The priority shall be set to “system”.
-    NOTE      Most E-Mode devices that support this Management Procedure will have a KNX Serial Number and may report.
+    value. The priority shall be set to "system".
+    NOTE  Most E-Mode devices that support this Management Procedure will have a KNX Serial Number and may report.
 
     Used Application Layer messages for Management
-     • A_NetworkParameter_Write
+    - A_NetworkParameter_Write
 
     Parameters of the Management Procedure
     NM_IndividualAddress_SerialNumber_Report(Device_SN)
-          Device_SN                            KNX Serial Number of the device that reports its Individual Address
+        Device_SN  KNX Serial Number of the device that reports its Individual Address
 
     Sequence
-       Management                                                                 Management
-            Client                                                                Server          remark
-                              A_NetworkParameter_Write-PDU
-                                      (comm_mode = broadcast,
-                               hop_count_type = default NL parameter,
-                                   object_type = 0 = Device Object,
-                     Property_id = PID_ADDR_REPORT = 60, priority = system,
-                                         value = Device_SN)
+
+    ```mermaid
+    sequenceDiagram
+        participant C as Management Client
+        participant S as Management Server
+        C->>S: A_NetworkParameter_Write-PDU (comm_mode = broadcast, hop_count_type = default NL parameter, object_type = 0 = Device Object, Property_id = PID_ADDR_REPORT = 60, priority = system, value = Device_SN)
+    ```
 
 Inputs (from spec):
     (see body)

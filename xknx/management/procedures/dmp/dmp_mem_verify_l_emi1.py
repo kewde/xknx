@@ -4,21 +4,22 @@ DMP_MemVerify_LEmi1 — KNX 03.05.02 §3.17.3 (PDF p. 105).
 Spec text (verbatim from spec):
 
     This Management Procedure shall use the local communication with EMI 1.
+
     Used Application Layer Services for Management
-        •      PC_Get_Value
+    - PC_Get_Value
 
     Sequence
-    Management                                                             Management                 remark
-    Client                                                                 Server
 
-    for each data block (≤12 octet), until all data are transmitted
-                                   PC_Get_Value-PDU
-                                     (Addr, Length)
-
-                                   PC_Get_Value-PDU                                     different or no data received
-                                   (Addr, Length, Data)                                 ⇒ error
-
-    endfor
+    ```mermaid
+    sequenceDiagram
+        participant C as Management Client
+        participant S as Management Server
+        loop for each data block (≤12 octet), until all data are transmitted
+            C->>S: PC_Get_Value-PDU (Addr, Length)
+            S->>C: PC_Get_Value-PDU (Addr, Length, Data)
+            Note right of S: different or no data received ⇒ error
+        end
+    ```
 
     Exception handling
     The general exception handling shall apply.

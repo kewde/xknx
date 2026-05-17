@@ -4,19 +4,20 @@ DMP_ExtRunStateMachineRead_RCo_IO — KNX 03.05.02 §3.36.4 (PDF p. 157).
 Spec text (verbatim from spec):
 
     This Management Procedure shall use the connection oriented communication mode.
+
     Used Application Layer Services for Management
-        •   A_FunctionPropertyExtState_Read
+    - A_FunctionPropertyExtState_Read
+
     Sequence
-    Management                                                            Management
-    Client                                                                Server
 
-                      A_ FunctionPropertyExtState_Read-PDU
-                 (object_type = OT, object_instance = OI, PID = PP)
-
-                    A_FunctionPropertyExtState_Response-PDU                             The Management Server
-                 (object_type = OT, object_instance = OI, PID = PP,                     shall return the result and
-                                  data = run state)                                     error indication to the
-                                                                                        Management Client
+    ```mermaid
+    sequenceDiagram
+        participant C as Management Client
+        participant S as Management Server
+        C->>S: A_ FunctionPropertyExtState_Read-PDU (object_type = OT, object_instance = OI, PID = PP)
+        S->>C: A_FunctionPropertyExtState_Response-PDU (object_type = OT, object_instance = OI, PID = PP, data = run state)
+        Note right of S: The Management Server shall return the result and error indication to the Management Client
+    ```
 
     Exception handling
     The general exception handling shall apply.

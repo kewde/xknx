@@ -6,23 +6,24 @@ Spec text (verbatim from spec):
     Use
     This Management Procedure shall use the local communication with EMI 1. The Device Descriptor
     Type 0 shall be read from the memory location 4Eh – 4Fh.
+
     Used EMI-services for Management
-          • PC_Get_Value
+    - PC_Get_Value
 
     Parameters of the Management Procedure
     DMP_Restart_LEmi1(/* [out] */ DD0, /* [out] */ DmpError)
-        DD0:                                   Value of the Device Descriptor 0 as returned by the device.
-        DmpError:                              Possible error indication.
+        DD0:        Value of the Device Descriptor 0 as returned by the device.
+        DmpError:   Possible error indication.
 
     Sequence
-    Management                                                            Management              remark
-    Client                                                                Server
 
-                             PC_Get_Value.req message
-                         (Length = 2 octet, Address = 004Eh)
-
-                             PC_Get_Value.con message
-                   (Length = 2 octet, Address = 004Eh, Data = DD0)
+    ```mermaid
+    sequenceDiagram
+        participant C as Management Client
+        participant S as Management Server
+        C->>S: PC_Get_Value.req message (Length = 2 octet, Address = 004Eh)
+        S->>C: PC_Get_Value.con message (Length = 2 octet, Address = 004Eh, Data = DD0)
+    ```
 
     Exception handling
     The general exception handling is applicable

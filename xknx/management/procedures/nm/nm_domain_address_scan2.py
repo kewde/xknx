@@ -14,36 +14,36 @@ Spec text (verbatim from spec):
     procedure.
     The MaC shall not execute this Management Procedure with values of any DoA in which the MSB
     differs from 00h.
+
     Used Application Layer Services for management
-    • A_DomainAddressSelective_Read
+    - A_DomainAddressSelective_Read
       (please note that this service responds with the A_DomainAddress_Response-PDU).
+
     Parameters of the Management Procedure
     NM_DomainAddress_Scan2(/* [in] */ mpp_DoA_start, /* [in] */ mpp_DoA_end,
     /* [out] */ mmp_KNX_SN[],/* [out] */ mmp_IA[], /* [out] */ mpp_DoA_response[])
-        mpp_DoA_start:                         This shall be lower limit of the range of Domain Addresses in
-                                               which the presence of devices shall be searched.
-        mpp_DoA_end:                           This shall be upper limit of the range of Domain Addresses in
-                                               which the presence of devices shall be searched.
-        mpp_KNX_SN[]:                          This shall be the collection of all KNX Serial Number values that
-                                               have been used by the responding devices.
-        mpp_IA[]:                              This shall be the collection of all Individual Address values that
-                                               have been used by the responding devices.
-        mpp_DoA_response[]:                    This shall be the DoA with which the Management Server has
-                                               responded. There can be 0, 1 or multiple answers with the same
-                                               of different DoA-values.
+        mpp_DoA_start:        This shall be lower limit of the range of Domain Addresses in
+                              which the presence of devices shall be searched.
+        mpp_DoA_end:          This shall be upper limit of the range of Domain Addresses in
+                              which the presence of devices shall be searched.
+        mpp_KNX_SN[]:         This shall be the collection of all KNX Serial Number values that
+                              have been used by the responding devices.
+        mpp_IA[]:             This shall be the collection of all Individual Address values that
+                              have been used by the responding devices.
+        mpp_DoA_response[]:   This shall be the DoA with which the Management Server has
+                              responded. There can be 0, 1 or multiple answers with the same
+                              of different DoA-values.
 
     The A_DomainAddressSelective_Read-PDU shall be transmitted with priority System.
-    Management                                                                  Management
-    Client                                                                      Server (device)
 
-                        A_DomainAddressSelective_Read-PDU
-                 (type = 01h, domain_address_start = mmp_DoA_start
-                        domain_address_end = mpp_DoA_end)
-
-                                           If the Management Server finds the conditions for replying to the message fulfilled,
-                                                                                              then it shall transmit a response.
-                          A_DomainAddress_Response-PDU
-                        (mpp_DoA_response= domain_address)
+    ```mermaid
+    sequenceDiagram
+        participant C as Management Client
+        participant S as Management Server (device)
+        C->>S: A_DomainAddressSelective_Read-PDU (type = 01h, domain_address_start = mmp_DoA_start, domain_address_end = mpp_DoA_end)
+        Note right of S: If the Management Server finds the conditions for replying to the message fulfilled, then it shall transmit a response.
+        S->>C: A_DomainAddress_Response-PDU (mpp_DoA_response= domain_address)
+    ```
 
 Inputs (from spec):
     (see body)

@@ -5,32 +5,28 @@ Spec text (verbatim from spec):
 
     This Management Procedure shall use the connection oriented or connectionless communication
     mode.
+
     Used Application Layer Services for Management
-        •    A_PropertyExtDescription_Read
-        •    A_PropertyExtValue_Read
+    - A_PropertyExtDescription_Read
+    - A_PropertyExtValue_Read
+
     Sequence
-    Management                                                            Management
-    Client                                                                Server
-    If Property of management control is unknown to the Management Client
-                       A_PropertyExtDescription_Read-PDU
-                 (object_type = OT, object_instance = OI, PID = PP,
-                                     type = 0)
 
-                     A_PropertyExtDescription_Response-PDU                              A_Disconnect.ind ⇒ error,
-                 (object_type = OT, object_instance = OI, PID = PP,                     Property does not exist ⇒
-                                    type = 0, …)                                        error
-
-    endif
-    for each data block, until all data are transmitted
-                           A_PropertyExtValue_Read-PDU
-                 (object_type = OT, object_instance = OI, PID = PP,
-                        start_index = SSSS, nr_of_elem = EE)
-
-                         A_PropertyExtValue_Response-PDU                          A_Disconnect.ind ⇒ error,
-                  (object_type = OT, object_instance = OI, PID = PP,              different or no data
-                 start_index = SSSS, nr_of_elem = EE, data = XX,…)                received ⇒ error
-
-    endfor
+    ```mermaid
+    sequenceDiagram
+        participant C as Management Client
+        participant S as Management Server
+        opt Property of management control is unknown to the Management Client
+            C->>S: A_PropertyExtDescription_Read-PDU (object_type = OT, object_instance = OI, PID = PP, type = 0)
+            S->>C: A_PropertyExtDescription_Response-PDU (object_type = OT, object_instance = OI, PID = PP, type = 0, …)
+            Note right of S: A_Disconnect.ind ⇒ error, Property does not exist ⇒ error
+        end
+        loop for each data block, until all data are transmitted
+            C->>S: A_PropertyExtValue_Read-PDU (object_type = OT, object_instance = OI, PID = PP, start_index = SSSS, nr_of_elem = EE)
+            S->>C: A_PropertyExtValue_Response-PDU (object_type = OT, object_instance = OI, PID = PP, start_index = SSSS, nr_of_elem = EE, data = XX,…)
+            Note right of S: A_Disconnect.ind ⇒ error, different or no data received ⇒ error
+        end
+    ```
 
     Exception handling
     The general exception handling shall apply.

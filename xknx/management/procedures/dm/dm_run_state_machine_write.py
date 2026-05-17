@@ -7,25 +7,26 @@ Spec text (verbatim from spec):
     This device Management Procedure shall be used to write to the Run State Machine of a Management
     Server The data shall be located in the Management Procedure. Depending on the flag, the resulting
     state is verified immediately.
-                                    event                      resulting state
-                                    Restart                    Ready or Running
-                                    Stop                       Terminated
+
+                          event     resulting state
+                          Restart   Ready or Running
+                          Stop      Terminated
 
     A DM_Connect shall be executed before executing this Management Procedure.
 
-    DM_RunStateMachineWrite                    (flags, stateMachineType, stateMachineNr, event)
-            flags :                       bit 0 :   location of data
-                                                          0: -
-                                                          1: in management control
-                                          bit 1 :   verify the resulting state enabled / disabled
-                                                          0: disabled
-                                                          1: enabled
-                                          All other bits are reserved. These shall be set to 0. This shall be
-                                          tested by the Management Client.
-            stateMachineType :            type of the object that contains the state machine:
+    DM_RunStateMachineWrite (flags, stateMachineType, stateMachineNr, event)
+        flags             bit 0: location of data
+                              0: -
+                              1: in management control
+                          bit 1: verify the resulting state enabled / disabled
+                              0: disabled
+                              1: enabled
+                          All other bits are reserved. These shall be set to 0. This shall be
+                          tested by the Management Client.
+        stateMachineType  type of the object that contains the state machine:
 
-                                                      type       state machine
-                                                      0003       application program
+                          type   state machine
+                          0003   application program
 
 Inputs (from spec):
     (see body)

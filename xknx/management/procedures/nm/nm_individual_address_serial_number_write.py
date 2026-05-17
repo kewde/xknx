@@ -16,32 +16,34 @@ Spec text (verbatim from spec):
     If the Individual Address of more than one device has to be programmed, this Network Management
     Procedure NM_IndividualAddress_SerialNumber_Write has to be repeated for each device, using that
     device’s KNX Serial Number.
+
     Used Application Layer Services for Management
-       • A_IndividualAddressSerialNumber_Write
-       • A_IndividualAddressSerialNumber_Read
+    - A_IndividualAddressSerialNumber_Write
+    - A_IndividualAddressSerialNumber_Read
+
     Parameters of the Management Procedure
     NM_IndividualAddress_SerialNumber_Write(/* [in] */ SN_device, /* [in] */ IA_new,
         /* [out] */ DoA_Device)
-       SN_Device:               KNX Serial Number of device to which the Individual Address will be
-                                assigned.
-       IA_new:                  Individual Address to be programmed.
-       DoA_Device:              The Domain Address of the device if the device is on an open medium
-                                supporting a Domain Address.
+        SN_Device:  KNX Serial Number of device to which the Individual Address will be
+                    assigned.
+        IA_new:     Individual Address to be programmed.
+        DoA_Device: The Domain Address of the device if the device is on an open medium
+                    supporting a Domain Address.
+
     Sequence
-    Management                                                                           Management
-    Client                                                                               Server
-    1.Set Individual Address of Server
-                       A_IndividualAddressSerialNumber_Write-PDU                                      The server shall set its
-                   (serial_number = SN_Device, new_address = IA_new)                                  Individual Address according
-                                                                                                      to the received value
 
-    2. Verify
-                        A_IndividualAddressSerialNumber_Read-PDU
-                                (serial_number = SN_Device)
-
-                    A_IndividualAddressSerialNumber_Response-PDU                                      Different or no answer received
-                  (source_address = IA_new, serial number = SN_Device,                                ⇒ Error
-                             domain_address = DoA_Device)
+    ```mermaid
+    sequenceDiagram
+        participant C as Management Client
+        participant S as Management Server
+        Note over C,S: 1.Set Individual Address of Server
+        C->>S: A_IndividualAddressSerialNumber_Write-PDU (serial_number = SN_Device, new_address = IA_new)
+        Note right of S: The server shall set its Individual Address according to the received value
+        Note over C,S: 2. Verify
+        C->>S: A_IndividualAddressSerialNumber_Read-PDU (serial_number = SN_Device)
+        S->>C: A_IndividualAddressSerialNumber_Response-PDU (source_address = IA_new, serial number = SN_Device, domain_address = DoA_Device)
+        Note right of S: Different or no answer received ⇒ Error
+    ```
 
     NOTE - Opposite to the procedures NM_IndividualAddress_Write and
     NM_DomainAndIndividualAddress_Write, both requiring that the Programming Mode be active in the device and using the

@@ -4,19 +4,20 @@ DM_SetKey_RCo — KNX 03.05.02 §3.6.1 (PDF p. 76).
 Spec text (verbatim from spec):
 
     This Management Procedure shall use the connection oriented communication mode.
+
     Used Application Layer Services for Management
-          •      A_Key_Write
+    - A_Key_Write
 
     Sequence
-    Management                                                             Management                 remark
-    Client                                                                 Server
 
-                                 A_Key_Write(key, level)
-
-                                 A_Key_Response(level)                                  A_Disconnect.ind ⇒
-                                                                                        error,
-                                                                                        requested level != returned
-                                                                                        level ⇒ operation failed
+    ```mermaid
+    sequenceDiagram
+        participant C as Management Client
+        participant S as Management Server
+        C->>S: A_Key_Write(key, level)
+        S->>C: A_Key_Response(level)
+        Note right of S: A_Disconnect.ind ⇒ error, requested level != returned level ⇒ operation failed
+    ```
 
     Exception handling
     If the level returned in A_Key_Response is not the same as in the A_Key_Write, the operation was not

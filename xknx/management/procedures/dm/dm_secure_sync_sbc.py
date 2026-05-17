@@ -12,123 +12,76 @@ Spec text (verbatim from spec):
     a closed medium, the broadcast communication mode shall be used.
     The parameter serial_number of the S-A_Sync_Req-PDU shall contain the assumed KNX Serial
     Number of the MaS (mpp_SN_mas); this value shall not be zero.
-    Used Application Layer Services for Management
-          •   S-A_Sync
-    Parameters of the Management Procedure
-    DM_SecureSync_SBC(            /* [in] */ mpp_comm_mode, /* [in] */ mpp_SN_mas,
-                                  /* [in] */ mpp_key_request, /* [in] */ mpp_key_type,
-                                  /* [in] */ mpp_seq_nr_mac_in, /* [out] */ mpp_seq_nr_mas_out,
-                                  /* [out] */ mpp_seq_nr_mac_out)
-          mpp_comm_mode:            Indication of whether either broadcast – or system broadcast
-                                    communication mode shall be used.
-          mpp_SN_mas:               The KNX Serial Number of the device with which the Sequence
-                                    Numbers will be synchronised.
-          mpp_key_request:          The key of the MaS with which the Sequence Numbers will be
-                                    synchronised. This can be any of the following.
-                                         -    The FDSK if the MaC supposes the MaS to be in default
-                                              state.
-                                                USE    S-Mode, PB-Mode (“Advanced Security”)
-                                          -     A Tool Key that is configured before.
-                                                USE    S-Mode
-                                          -     A common key established before during a Diffie-Hellmann
-                                                key exchange procedure.
-                                                USE    PB-Mode (“Basic Security”)
-          mpp_key_type:             This shall indicate whether the Tool Key is used or not and shall
-                                    determine the value of the field Tool Access in the SCF of the
-                                    S-A_Sync messages.
-                                         -    In S-Mode, the mpp_key_type shall be “Tool Access” and the
-                                              field Tool Access shall be set accordingly.
-                                         -    In PB-Mode, the mpp_key_type shall be “no Tool Access”
-                                              and the field Tool Access in the SCF shall be cleared.
-          mpp_seq_nr_mac_in:        The Sequence Number that the MaC assumes that it has to use as its
-                                    own local Sequence Number Sending for communicating with the
-                                    device.
-                                    If the MaC does not store this SeqNr, then mpp_seq_nr_mac_in shall
-                                    be zero.
-          mpp_seq_nr_mas_out:       The device Sequence Number as returned by the device.
 
-         mpp_seq_nr_mac_out: The tool Sequence Number as returned by the device.
+    Used Application Layer Services for Management
+    - S-A_Sync
+
+    Parameters of the Management Procedure
+    DM_SecureSync_SBC( /* [in] */ mpp_comm_mode, /* [in] */ mpp_SN_mas,
+                       /* [in] */ mpp_key_request, /* [in] */ mpp_key_type,
+                       /* [in] */ mpp_seq_nr_mac_in, /* [out] */ mpp_seq_nr_mas_out,
+                       /* [out] */ mpp_seq_nr_mac_out)
+        mpp_comm_mode      Indication of whether either broadcast – or system broadcast
+                           communication mode shall be used.
+        mpp_SN_mas         The KNX Serial Number of the device with which the Sequence
+                           Numbers will be synchronised.
+        mpp_key_request    The key of the MaS with which the Sequence Numbers will be
+                           synchronised. This can be any of the following.
+                           - The FDSK if the MaC supposes the MaS to be in default state.
+                             USE: S-Mode, PB-Mode ("Advanced Security")
+                           - A Tool Key that is configured before.
+                             USE: S-Mode
+                           - A common key established before during a Diffie-Hellmann
+                             key exchange procedure.
+                             USE: PB-Mode ("Basic Security")
+        mpp_key_type       This shall indicate whether the Tool Key is used or not and shall
+                           determine the value of the field Tool Access in the SCF of the
+                           S-A_Sync messages.
+                           - In S-Mode, the mpp_key_type shall be "Tool Access" and the
+                             field Tool Access shall be set accordingly.
+                           - In PB-Mode, the mpp_key_type shall be "no Tool Access"
+                             and the field Tool Access in the SCF shall be cleared.
+        mpp_seq_nr_mac_in  The Sequence Number that the MaC assumes that it has to use as its
+                           own local Sequence Number Sending for communicating with the
+                           device. If the MaC does not store this SeqNr, then mpp_seq_nr_mac_in shall
+                           be zero.
+        mpp_seq_nr_mas_out The device Sequence Number as returned by the device.
+        mpp_seq_nr_mac_out The tool Sequence Number as returned by the device.
 
     Variables
-         challenge_in:            The challenge chosen by the local S-AL
-                                  Please note the requirements on the challenge, in the specification of the
-                                  S-A_Sync-service in [03].
-         Random:                  The Random value generated by the remote S-AL
+        challenge_in  The challenge chosen by the local S-AL.
+                      Please note the requirements on the challenge, in the specification of the
+                      S-A_Sync-service in [03].
+        Random        The Random value generated by the remote S-AL
 
     Sequence
-    local S-AL                                                                                                   remote S-AL
-    The local S-AL shall create the challenge_in, compose the S-A_Sync_Req-PDU, secure the message
-    with the MAC and request the transmission with a T_Data_Broadcast or T_Data_SystemBroadcast
-    according the parameter mpp_comm_mode.
-                                           S-A_SYNC_REQ-PDU
-                                       (SeqNrlocal = mpp_seq_nr_mac_in,
-                          KNX Serial Number = mpp_SN_mas, challenge = challenge_in,
-                                                      MAC)
-                           comm_mode = mpp_comm_mode, SCF.T = mpp_key_type,
-                                     SCF.SBC = 1, key = mpp_key_request
 
-                                    .The remote S-AL shall evaluate the received S-A_Sync.ind as specified in [03]: it shall
-                                     not accept the request if it has responded to a preceding request less than 1 s before; if it
-                                     accepts the request then it shall evaluate the KNX Serial Number if ≠ 0; it shall verify the
-                                     MAC.
-                                     If the service request is accepted, it shall respond as follows.
-                                     •      mpp_seq_nr_mas_out shall be the SeqNr of the remote S-AL itself
-                                            (= PID_SEQUENCE_NUMBER_SENDING).
-                                     •      mpp_seq_nr_mac_out shall be the maximal value of
-                                            1. mpp_seq_nr_mac_in, and
-                                            2. the sequence number that the MaS accepts as next SeqNr for that MaC).
-                                                   ▲ In case the MaC uses the Tool Key, this is thus be derived from the
-                                                        Sequence Number for Tool Access (see [05]).
-                                                   ▲ In case of any other communication partner, this shall thus be derive
-                                                        from the Last Valid SeqNr as stored for that partner in the Security
-                                                        Individual Address Table (see PID_SECURITY_INDIVIDUAL_-
-                                                        ADDRESS_TABLE in ).
-                                            The MaS shall also assume this highest value as the new value that it shall expect
-                                            from the MaC. (In case of 1., the MaS thus changes the SeqNr that it expects from
-                                            the MaC to this highest value.)
-                                     •      It shall create a Random-value and XOR it with the received Challenge (see
-                                            S-A_Sync-service specification in [03]
-                                     The KNX Serial Number shall not be contained in the S-A_Sync_Res-PDU.
-                                     The MaS shall secure the message with the MAC using the key as indicated in the request
-                                     and request the transmission with a T_Data_Broadcast or T_Data_SystemBroadcast
-                                     according the parameter mpp_comm_mode.
-
-                                            S-A_SYNC_RES-PDU
-                           (Challenge XOR Random, SeqNrremote = mpp_seq_nr_mas_out,
-                                       SeqNrlocal = mpp_seq_nr_mac_out)
-                            comm_mode = mpp_comm_mode, SCF.T = mpp_key_type,
-                                      SCF.SBC = 1, key = mpp_key_request
-
-                            The remote S-AL shall after transmission of the S-A_SYNC_RES-PDU start a 1 s timer; while this
-                                                   timer is running, it shall not accepted any further S-A_SYNC_REQ-PDU.
-
-    local S-AL                                                                                                   remote S-AL
-    If the local S-AL receives the S-A_Sync_Res-PDU then it shall ignore this message if it has not sent out
-    before an S-A_Sync_Req-PDU.
-    If the local S-AL accepts the S-A_Sync_Res-PDU then it shall do the following.
-    •      It shall calculate the Random value by XOR-ing it with its own initially used Challenge (see the
-           specification of the S A_Sync-service in [02].)
-    •      It shall verify the MAC.
-    If there are no errors, then the MaC shall use the following values for SeqNrlocal and SeqNrremote.
-    •      SeqNrlocal = max(mpp_seq_nr_mac_out, SeqNrlocal)
-                  In-between the transmission of the S-A_Sync_Req-PDU and the reception of the
-                  S-A_Sync_Res-PDU, the MaC may have transmitted any S-A_Data-PDUs, which
-                  incremented its Sequence Number Sending. The MaC shall thus take the highest value.
-    • SeqNrremote = (mpp_seq_nr_mas_out, SeqNrremote,stored)
-                  It should normally not happen that the MaS replies (mpp_seq_nr_mas_out) with a value that
-                  is lower than the optionally locally stored one (SeqNrremote,stored). For the case that this
-                  however happens (MaS error), the MaC shall assume the highest value.
+    ```mermaid
+    sequenceDiagram
+        participant L as local S-AL
+        participant R as remote S-AL
+        Note over L: The local S-AL shall create the challenge_in, compose the S-A_Sync_Req-PDU, secure the message with the MAC and request the transmission with a T_Data_Broadcast or T_Data_SystemBroadcast according the parameter mpp_comm_mode.
+        L->>R: S-A_SYNC_REQ-PDU (SeqNrlocal = mpp_seq_nr_mac_in, KNX Serial Number = mpp_SN_mas, challenge = challenge_in, MAC) comm_mode = mpp_comm_mode, SCF.T = mpp_key_type, SCF.SBC = 1, key = mpp_key_request
+        Note over R: The remote S-AL shall evaluate the received S-A_Sync.ind as specified in [03]: it shall not accept the request if it has responded to a preceding request less than 1 s before; if it accepts the request then it shall evaluate the KNX Serial Number if ≠ 0; it shall verify the MAC. If the service request is accepted, it shall respond as follows.
+        Note over R: mpp_seq_nr_mas_out shall be the SeqNr of the remote S-AL itself (= PID_SEQUENCE_NUMBER_SENDING).
+        Note over R: mpp_seq_nr_mac_out shall be the maximal value of 1. mpp_seq_nr_mac_in, and 2. the sequence number that the MaS accepts as next SeqNr for that MaC. The MaS shall also assume this highest value as the new value that it shall expect from the MaC.
+        Note over R: It shall create a Random-value and XOR it with the received Challenge (see S-A_Sync-service specification in [03]). The KNX Serial Number shall not be contained in the S-A_Sync_Res-PDU.
+        R->>L: S-A_SYNC_RES-PDU (Challenge XOR Random, SeqNrremote = mpp_seq_nr_mas_out, SeqNrlocal = mpp_seq_nr_mac_out) comm_mode = mpp_comm_mode, SCF.T = mpp_key_type, SCF.SBC = 1, key = mpp_key_request
+        Note over R: The remote S-AL shall after transmission of the S-A_SYNC_RES-PDU start a 1 s timer; while this timer is running, it shall not accepted any further S-A_SYNC_REQ-PDU.
+        Note over L: If the local S-AL receives the S-A_Sync_Res-PDU then it shall ignore this message if it has not sent out before an S-A_Sync_Req-PDU. If the local S-AL accepts the S-A_Sync_Res-PDU then it shall calculate the Random value by XOR-ing it with its own initially used Challenge. It shall verify the MAC.
+        Note over L: If there are no errors, then the MaC shall use SeqNrlocal = max(mpp_seq_nr_mac_out, SeqNrlocal) and SeqNrremote = (mpp_seq_nr_mas_out, SeqNrremote,stored).
+    ```
 
     Exception handling
-    •     If the MaC does not receive a response from the MaS, then it shall repeat the request once. If
-          there is still no request after one retry then the MaC shall consider the procedure as failed.
-    NOTE 18          The S-Mode MaC will call this Management Procedure with the Tool Access flag set and using
-    the Tool Key or the FDSK. If either key (Tool Key or FDSK) fails, the S-Mode MaC will typically retry the
-    Management Procedure with the other key (FDSK respectively Tool Key). This will allow handling the case where
-    the MaS was before handled by another instance of the MaC, or, the case where the MaS has manually been
-    triggered to perform a Master Reset.
-    •     If a response is received but the MAC-verification fails then the MaC shall consider the procedure
-          as failed.
+    - If the MaC does not receive a response from the MaS, then it shall repeat the request once. If
+      there is still no request after one retry then the MaC shall consider the procedure as failed.
+      NOTE 18 The S-Mode MaC will call this Management Procedure with the Tool Access flag set and using
+      the Tool Key or the FDSK. If either key (Tool Key or FDSK) fails, the S-Mode MaC will typically retry the
+      Management Procedure with the other key (FDSK respectively Tool Key). This will allow handling the case where
+      the MaS was before handled by another instance of the MaC, or, the case where the MaS has manually been
+      triggered to perform a Master Reset.
+    - If a response is received but the MAC-verification fails then the MaC shall consider the procedure
+      as failed.
 
 Inputs (from spec):
     (see body)

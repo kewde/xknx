@@ -5,6 +5,7 @@ Spec text (verbatim from spec):
 
     This Management Procedure shall use the connection oriented or connectionless communication
     mode.
+
     Preconditions
     This Management Procedure shall transfer the data in datablocks and transmit these in subsequent
     A_MemoryExtended_Read-PDUs and/or A_MemoryExtended_Write-PDUs, as specified below, all of
@@ -14,27 +15,26 @@ Spec text (verbatim from spec):
     The usage of this procedure instead of the DMP_MemWrite_Extended_R procedure will produce the
     same amount of data on the bus. It still can be a useful procedure if the Server has no optimization in
     his write algorithm and writes Data no matter if the same data is already stored in the memory.
-         -       If the Management Server does not support the L_Data_Extended Frame format, then this
-                 maximal size shall be 10 octets.
-         -       If the Management Server supports L_Data_Extended Frames, then the maximal size shall
-                 be adapted in function of the capabilities of the Management Server and possible Couplers
-                 and Routers in the communication path to the Management Client. This is specified in [06].
+    - If the Management Server does not support the L_Data_Extended Frame format, then this
+      maximal size shall be 10 octets.
+    - If the Management Server supports L_Data_Extended Frames, then the maximal size shall
+      be adapted in function of the capabilities of the Management Server and possible Couplers
+      and Routers in the communication path to the Management Client. This is specified in [06].
+
     Used Application Layer Services for Management
-    •    A_MemoryExtended_Read
-    •    A_MemoryExtended_Read_Response
+    - A_MemoryExtended_Read
+    - A_MemoryExtended_Read_Response
 
-    Management                                                            Management                 remark
-    Client                                                                Server
-
-    for each data block (data size ≤ maximal size), until all data are transmitted
-                            A_MemoryExtended_Read -PDU
-                                  (Addr, Length)
-
-                       A_MemoryExtended_Read_Response-PDU                              A_Disconnect.ind ⇒
-                            (Return Code, Addr, Data)                                  error,
-                                                                                       negative Return Code
-                                                                                       received ⇒ error
-    endfor
+    ```mermaid
+    sequenceDiagram
+        participant C as Management Client
+        participant S as Management Server
+        loop for each data block (data size ≤ maximal size), until all data are transmitted
+            C->>S: A_MemoryExtended_Read -PDU (Addr, Length)
+            S->>C: A_MemoryExtended_Read_Response-PDU (Return Code, Addr, Data)
+            Note right of S: A_Disconnect.ind ⇒ error, negative Return Code received ⇒ error
+        end
+    ```
 
     Exception handling
     The general exception handling shall apply.

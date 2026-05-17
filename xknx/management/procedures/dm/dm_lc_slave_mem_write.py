@@ -13,26 +13,26 @@ Spec text (verbatim from spec):
     This device Management Procedure is specific for the first generation Coupler model and shall not be
     used for further developments of Management Servers.
 
-    DM_LCSlaveMemWrite                         (flags, dataBlockStartAddress, deviceStartAddress,
-                                               deviceEndAddress, data)
-    flags                                      bit 0:        location of data
-                                               0: in data block
-                                               1: in Management Procedure
-                                               bit 1:        verify enabled / disabled
-                                               0: disabled
-                                               1: enabled
-                                               All other bits are reserved. These shall be set to 0. This shall be
-                                               tested by the Management Client.
-    dataBlockStartAddress                      specifies the address where the data are located in the data
-                                               block. If the data are located in the Management Procedure, this
-                                               field is set to 0.
-    deviceStartAddress                         address of first memory octet that is written by this
-                                               Management Procedure
-    deviceEndAddress                           address of the last memory octet that is written by this
-                                               Management Procedure
-    data                                       the data that are transferred by this Management Procedure. The
-                                               data can be located in the data block or in the Management
-                                               Procedure.
+    DM_LCSlaveMemWrite (flags, dataBlockStartAddress, deviceStartAddress,
+                        deviceEndAddress, data)
+    flags                      bit 0:    location of data
+                                         0: in data block
+                                         1: in Management Procedure
+                               bit 1:    verify enabled / disabled
+                                         0: disabled
+                                         1: enabled
+                               All other bits are reserved. These shall be set to 0. This shall be
+                               tested by the Management Client.
+    dataBlockStartAddress      specifies the address where the data are located in the data
+                               block. If the data are located in the Management Procedure, this
+                               field is set to 0.
+    deviceStartAddress         address of first memory octet that is written by this
+                               Management Procedure
+    deviceEndAddress           address of the last memory octet that is written by this
+                               Management Procedure
+    data                       the data that are transferred by this Management Procedure. The
+                               data can be located in the data block or in the Management
+                               Procedure.
 
     3.38.2 Procedure: DMP_LCSlaveMemWrite_Rco
     This Management Procedure shall use the connection oriented communication mode.
@@ -43,35 +43,32 @@ Spec text (verbatim from spec):
     of which except possibly the last PDU, shall have a data field (ASDU) with a size equal to the
     maximum size that can be transported over the communication path consisting of the Management
     Client, the Management Server and Couplers and Routers in between these two.
-           -   If the Management Server does not support the L_Data_Extended Frame format, then this
-               maximal size shall be 11 octets.
-           -   If the Management Server supports L_Data_Extended Frames, then the maximal size shall
-               be adapted in function of the capabilities of the Management Server and possible Couplers
-               and Routers in the communication path to the Management Client. This is specified in [06].
+        - If the Management Server does not support the L_Data_Extended Frame format, then this
+          maximal size shall be 11 octets.
+        - If the Management Server supports L_Data_Extended Frames, then the maximal size shall
+          be adapted in function of the capabilities of the Management Server and possible Couplers
+          and Routers in the communication path to the Management Client. This is specified in [06].
     Used Application Layer Services for Management
-           •   A_RouterMemory_Write
-           •   A_RouterMemory_Read
+    - A_RouterMemory_Write
+    - A_RouterMemory_Read
 
     Sequence
-    Management                                                            Management                 remark
-    Client                                                                Server
-    for each data block (data size≤ maximal size), until all data are transmitted
-                           A_RouterMemory_Write-PDU
-                                 (Addr, Length, Data)
 
-             if verify = enabled
-                             A_RouterMemory_Read-PDU
-                                   (Addr, Length)
-
-                           A_RouterMemory_Response-PDU                                 A_Disconnect.ind ⇒
-                                (Addr, Length, Data)                                   error,
-                                                                                       if verify = enabled and
-                                                                                       different or no data received
-                                                                                       ⇒ error
-             else
-                 delay for programming the memory in the device 16)
-             endif
-    endfor
+    ```mermaid
+    sequenceDiagram
+        participant C as Management Client
+        participant S as Management Server
+        Note over C,S: for each data block (data size≤ maximal size), until all data are transmitted
+        C->>S: A_RouterMemory_Write-PDU (Addr, Length, Data)
+        alt verify = enabled
+            C->>S: A_RouterMemory_Read-PDU (Addr, Length)
+            S->>C: A_RouterMemory_Response-PDU (Addr, Length, Data)
+            Note right of S: A_Disconnect.ind => error, if verify = enabled and different or no data received => error
+        else
+            Note over C,S: delay for programming the memory in the device 16)
+        end
+        Note over C,S: endfor
+    ```
 
     Exception handling
     The general exception handling shall apply.

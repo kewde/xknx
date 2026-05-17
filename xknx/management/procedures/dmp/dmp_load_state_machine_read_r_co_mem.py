@@ -10,26 +10,28 @@ Spec text (verbatim from spec):
     This Management Procedure shall only be used with device model for mask version 070nh (BIM
     M112). The address of the management control is 0104 h. The address (AAAA) of the load state
     depends on the Load State Machine.
-                                                                  address of load state
-                                      state machine
-                                                                        (AAAA)
-                               address table                               B6EAh
-                               association table                           B6EBh
-                               application program                         B6ECh
-                               PEI program                                 B6EDh
+
+        state machine          address of load state (AAAA)
+        address table          B6EAh
+        association table      B6EBh
+        application program    B6ECh
+        PEI program            B6EDh
 
     This Management Procedure shall not be used for further developments of Management Servers.
+
     Used Application Layer Services for Management
-        •       A_Memory_Read
+    - A_Memory_Read
 
     Sequence
-    Management                                                            Management                remark
-    Client                                                                Server
-                                A_Memory_Read-PDU
-                              (addr = AAAA, length = 01h)
 
-                              A_Memory_Response-PDU                                    A_Disconnect.ind ⇒ error,
-                     (addr = AAAA, length = 01h, data = loadstate)                     no data received ⇒ error
+    ```mermaid
+    sequenceDiagram
+        participant C as Management Client
+        participant S as Management Server
+        C->>S: A_Memory_Read-PDU (addr = AAAA, length = 01h)
+        S->>C: A_Memory_Response-PDU (addr = AAAA, length = 01h, data = loadstate)
+        Note right of S: A_Disconnect.ind ⇒ error, no data received ⇒ error
+    ```
 
     Exception handling
     The general exception handling shall apply.

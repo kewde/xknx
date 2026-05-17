@@ -8,32 +8,35 @@ Spec text (verbatim from spec):
     device of which the KNX Serial Number is known.
     The KNX Serial Number of the device (SN_Device) must be known in advance.
     If the Individual Address of more than one device has to be read, this Network Management Procedure
-    “NM_IndividualAddress_SerialNumber_Read” has to be repeated for each device, using each device’s
+    "NM_IndividualAddress_SerialNumber_Read" has to be repeated for each device, using each device’s
     KNX Serial Number.
+
     Used Application Layer Services for Management
-       • A_IndividualAddressSerialNumber_Read
+    - A_IndividualAddressSerialNumber_Read
+
     Parameters of the Management Procedure
     NM_IndividualAddress_SerialNumber_Read(/* [in] */ SN_Device, /* [out] */ DoA_current,
         /* [out] */ IA_current)
-       SN_Device:        KNX Serial Number of the device of which the Individual Address is to be read.
-       DoA_Device: The Domain Address of the device of which the Individual Address is read;
-                         it is contained in the response if the device is on Powerline.
-       IA_Device:        The Individual Address of the device, in the response.
-    Sequence
-    Management                                                            Management                remark
-    Client                                                                Server
-    1.Get the Individual Address of the Management Server.
-                   A_IndividualAddressSerialNumber_Read-PDU
-                           (serial_number = SN_Device)
+        SN_Device:  KNX Serial Number of the device of which the Individual Address is to be read.
+        DoA_Device: The Domain Address of the device of which the Individual Address is read;
+                    it is contained in the response if the device is on Powerline.
+        IA_Device:  The Individual Address of the device, in the response.
 
-                 A_IndividualAddressSerialNumber_Response-PDU
-                           (source_address = IA_current,
-                            serial_number = SN_Device,
-                         domain_address = DoA_Device)
-                                                                                       No answer received ⇒ Error
+    Sequence
+
+    ```mermaid
+    sequenceDiagram
+        participant C as Management Client
+        participant S as Management Server
+        Note over C,S: 1.Get the Individual Address of the Management Server.
+        C->>S: A_IndividualAddressSerialNumber_Read-PDU (serial_number = SN_Device)
+        S->>C: A_IndividualAddressSerialNumber_Response-PDU (source_address = IA_current, serial_number = SN_Device, domain_address = DoA_Device)
+        Note right of S: No answer received ⇒ Error
+    ```
 
     The Individual Address is contained as the Source Address of the
     A_IndividualAddressSerialNumber_Response-PDU.
+
     Exception handling
     If no answer is received, there is no device present in the network with the given KNX Serial Number.
 

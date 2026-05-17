@@ -7,34 +7,26 @@ Spec text (verbatim from spec):
     The control and state of the Load State Machine shall be located in Interface Objects of the
     Management Server and shall be accessible via Property services.
     The Management Client shall search the according Interface Object in the Management Server.
+
     Used Application Layer Services for Management
-        •     A_PropertyDescription_Read
-        •     A_PropertyValue_Read
+    - A_PropertyDescription_Read
+    - A_PropertyValue_Read
 
     Sequence
-    Management                                                            Management                remark
-    Client                                                                Server
-    if Property of management control is unknown to the Management Client
-                        A_PropertyDescription_Read-PDU
-                                (object_index = X,
-                     PID = PID_LOAD_STATE_CONTROL)
 
-                        A_PropertyDescription_Response-PDU                             A_Disconnect.ind ⇒ error,
-                                  (object_index = X,                                   Property does not exist ⇒
-                       PID = PID_LOAD_STATE_CONTROL,                                   error
-                             type = PDT_CONTROL, ...)
-
-    endif
-                            A_PropertyValue_Read-PDU
-                                  (object_index = X,
-                       PID = PID_LOAD_STATE_CONTROL,
-                         start_index = 1, element_count = 1)
-
-                          A_PropertyValue_Response-PDU                                 A_Disconnect.ind ⇒ error,
-                                 (object_index = X,                                    no data received ⇒ error
-                       PID = PID_LOAD_STATE_CONTROL,
-                                   start_index = 1,
-                         element_count = 1, data = loadstate)
+    ```mermaid
+    sequenceDiagram
+        participant C as Management Client
+        participant S as Management Server
+        opt Property of management control is unknown to the Management Client
+            C->>S: A_PropertyDescription_Read-PDU (object_index = X, PID = PID_LOAD_STATE_CONTROL)
+            S->>C: A_PropertyDescription_Response-PDU (object_index = X, PID = PID_LOAD_STATE_CONTROL, type = PDT_CONTROL, ...)
+            Note right of S: A_Disconnect.ind ⇒ error, Property does not exist ⇒ error
+        end
+        C->>S: A_PropertyValue_Read-PDU (object_index = X, PID = PID_LOAD_STATE_CONTROL, start_index = 1, element_count = 1)
+        S->>C: A_PropertyValue_Response-PDU (object_index = X, PID = PID_LOAD_STATE_CONTROL, start_index = 1, element_count = 1, data = loadstate)
+        Note right of S: A_Disconnect.ind ⇒ error, no data received ⇒ error
+    ```
 
     Exception handling
     The general exception handling shall apply.

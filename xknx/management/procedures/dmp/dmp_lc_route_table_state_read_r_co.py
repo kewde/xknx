@@ -4,18 +4,20 @@ DMP_LCRouteTableStateRead_RCo — KNX 03.05.02 §3.47.2 (PDF p. 172).
 Spec text (verbatim from spec):
 
     This Management Procedure shall use the connection oriented communication mode.
+
     Used Application Layer Services for Management
-        •      A_RouterStatus_Read
+    - A_RouterStatus_Read
 
     Sequence
-    Management                                                             Management                 remark
-    Client                                                                 Server
-                               A_RouterStatus_Read-PDU
-                                          ()
 
-                              A_RouterStatus_Response-PDU                               A_Disconnect.ind ⇒
-                                   (RouteTableState)                                    error,
-                                                                                        no data received ⇒ error
+    ```mermaid
+    sequenceDiagram
+        participant C as Management Client
+        participant S as Management Server
+        C->>S: A_RouterStatus_Read-PDU ()
+        S->>C: A_RouterStatus_Response-PDU (RouteTableState)
+        Note right of S: A_Disconnect.ind ⇒ error, no data received ⇒ error
+    ```
 
     Exception handling
     The general exception handling shall apply.

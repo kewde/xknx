@@ -4,19 +4,22 @@ DMP_Authorize_RCo — KNX 03.05.02 §3.5.1 (PDF p. 74).
 Spec text (verbatim from spec):
 
     This Management Procedure shall use the connection oriented communication mode.
+
     Used Application Layer Services for Management
-          •     A Authorize
+    - A Authorize
+
     Sequence
-    Management                                                                        Management                    remark
-    Client                                                                            Server
 
-    if authorization is required (key != FFFF FFFFH)
-                               A_Authorize_Request-PDU (key)
-
-                          A_Authorize_Response-PDU (key, level)                                     A_Disconnect.ind ⇒
-                                                                                                    error: connection was broken
-                                                                                                    down
-    endif
+    ```mermaid
+    sequenceDiagram
+        participant C as Management Client
+        participant S as Management Server
+        opt authorization is required (key != FFFF FFFFH)
+            C->>S: A_Authorize_Request-PDU (key)
+            S->>C: A_Authorize_Response-PDU (key, level)
+            Note right of S: A_Disconnect.ind ⇒ error: connection was broken down
+        end
+    ```
 
     Exception handling
     The general exception handling shall apply.

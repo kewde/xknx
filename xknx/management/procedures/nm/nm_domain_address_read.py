@@ -8,46 +8,51 @@ Spec text (verbatim from spec):
     devices in which Programming Mode is active.
     This procedure works independently of the configuration of the Domain Address and the Individual
     Address of the Router.
+
     Used Application Layer Services for Management
-       • A_DomainAddress_Read
+    - A_DomainAddress_Read
+
     Parameters of the Management Procedure
     NM_DomainAddress_Read (/* [out] */ individual_addresses[], /* [out] */ domain_addresses[])
-          individual_addresses[]:     The collection of all the Individual Addresses of the devices in which
-                                      Programming Mode is active.
-          domain_addresses[]:         The collection of all theDomain Addresses of the devices in which
-                                      Programming Mode is active.
+        individual_addresses[]:  The collection of all the Individual Addresses of the devices in which
+                                 Programming Mode is active.
+        domain_addresses[]:      The collection of all theDomain Addresses of the devices in which
+                                 Programming Mode is active.
+
     Variables
-          IAn:    The IA of one device n that responds to the A_DomainAddress_Read-PDU. The
-                  Management Client shall collect all IAn of the individual responses and report these via
-                  individual_addresses[].
+        IAn:    The IA of one device n that responds to the A_DomainAddress_Read-PDU. The
+                Management Client shall collect all IAn of the individual responses and report these via
+                individual_addresses[].
 
-       DoAn: The DoAn of one device n that responds to the A_DomainAddress_Read-PDU. The
-             Management Client shall collect all DoAn of the individual responses and report these
-             via domain_addresses[].
+        DoAn:   The DoAn of one device n that responds to the A_DomainAddress_Read-PDU. The
+                Management Client shall collect all DoAn of the individual responses and report these
+                via domain_addresses[].
+
     Sequence
-    Management                                                             Network /                  remark
-    Client                                                                 Management
-                                                                           Server
-                             A_DomainAddress_Read-PDU
-                                        ()
 
-                          A_DomainAddress_Response-PDU                                  one or more responses may be
-                    (source_address =IAn, domain_address = DoAn)                        received from different devices
-                                                                                        time-out: 3 s
-                                               …
+    ```mermaid
+    sequenceDiagram
+        participant C as Management Client
+        participant S as Network / Management Server
+        C->>S: A_DomainAddress_Read-PDU ()
+        S->>C: A_DomainAddress_Response-PDU (source_address = IAn, domain_address = DoAn)
+        Note right of S: one or more responses may be received from different devices
+        Note right of S: time-out: 3 s
+        Note over C,S: …
+    ```
 
     Exception handling
     The Management Client shall always wait until the time-out has elapsed. It shall collect all responses
     during this time-out.
-         -    If no A_DomainAddress_Response is received, there is no device in which Programming
-              Mode is active.
-         -    If one A_DomainAddress_Response is received, there is exactly one device in which
-              Programming Mode is active.
-         -    If more than one response is received, there are several devices in which Programming Mode
-              is active.
-         -    If two or more responses with the same Domain Address and Individual Addresses are
-              received, there is more than one device with the same Domain Address and the same
-              Individual Addresses.
+        -    If no A_DomainAddress_Response is received, there is no device in which Programming
+             Mode is active.
+        -    If one A_DomainAddress_Response is received, there is exactly one device in which
+             Programming Mode is active.
+        -    If more than one response is received, there are several devices in which Programming Mode
+             is active.
+        -    If two or more responses with the same Domain Address and Individual Addresses are
+             received, there is more than one device with the same Domain Address and the same
+             Individual Addresses.
     The Management Client shall not evaluate Layer-2 repetitions.
 
 Inputs (from spec):
