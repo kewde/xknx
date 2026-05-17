@@ -21,3 +21,4 @@ venv
 *.iml
 *.log
 main.py
+internal/

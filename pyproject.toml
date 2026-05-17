@@ -158,6 +158,12 @@ combine-as-imports = true
   "RUF012",
   "SLF",    # private member access
 ] # Mutable class attributes should be annotated with `typing.ClassVar`
+"xknx/management/procedures/**/*.py" = [
+  "RUF001", # ambiguous chars (verbatim KNX spec text in docstrings)
+  "RUF002",
+  "RUF003",
+  "D",      # pydocstyle (verbatim spec text uses arbitrary headings)
+]
 
 [tool.ruff.lint.flake8-builtins]
 builtins-allowed-modules = [

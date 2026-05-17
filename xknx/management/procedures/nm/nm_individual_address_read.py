@@ -1,4 +1,59 @@
-"""NM_IndividualAddress_Read — KNX 03.05.02 §2.2."""
+"""
+NM_IndividualAddress_Read — KNX 03.05.02 §2.2 (PDF p. 11).
+
+Spec text (verbatim from spec):
+
+    Use
+    This Network Management Procedure shall be used to read out the Individual Addresses of all the
+    devices that are in Programming Mode.
+    This procedure shall work independently of the configuration of the Individual Address of the Routers.
+    When applicable this procedure shall be preceded by the configuration of the Domain Address.
+
+    Used Application Layer Services for Management
+    - A_IndividualAddress_Read
+
+    Parameters of the Management Procedure
+    NM_IndividualAddress_Read(/* [out] */ individual_addresses[])
+        individual_addresses[]: The collection of all the Individual Addresses of the devices that are
+                                in Programming Mode.
+
+    Service parameters
+        None.
+
+    Variables
+        IAn: The IA of one device n that responds to the A_IndividualAddress_Read-PDU. The
+             Management Client shall collect all IAn of the individual responses and report these via
+             individual_addresses[].
+
+    Sequence
+
+    ```mermaid
+    sequenceDiagram
+        participant C as Management Client
+        participant S as Network / Management Server
+        C->>S: A_IndividualAddress_Read-PDU ()
+        S->>C: A_IndividualAddress_Response-PDU (source_address = IAn)...
+        Note right of S: the devices, one or more, that are in Programming Mode shall respond
+        Note over C,S: …
+        Note right of S: time-out: 3 s
+    ```
+
+    1)   The Management Server functionality has to be implemented.
+
+    Exception handling
+    The Management Client shall always wait until the time-out has elapsed. It shall collect all responses
+    IAn during this time-out.
+        -   If no A_IndividualAddress_Response-PDU is received, no device is in Programming Mode.
+        -   If one A_IndividualAddress_Response-PDU is received, exactly one device is in
+            Programming Mode.
+        -   If more than one response is received, several devices are in Programming Mode.
+        -   If two or more responses with the same Individual Address are received, there is more than
+            one device with the same Individual Addresses.
+    The Management Client shall not evaluate Layer-2 repetitions.
+
+Inputs (from spec):
+    (see body)
+"""
 
 from __future__ import annotations
 

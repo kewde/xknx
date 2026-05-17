@@ -1,4 +1,71 @@
-"""NM_IndividualAddress_Check — KNX 03.05.02 §2.19."""
+"""
+NM_IndividualAddress_Check — KNX 03.05.02 §2.19 (PDF p. 33).
+
+Spec text (verbatim from spec):
+
+    NOTE  This procedure has also been named NM_IndividualAddress_Scan.
+
+    Use
+    This Network Management Procedure shall be used by a network Management Client to check
+    whether a given Individual Address is occupied on the network or not.
+
+    Used Application Layer Services for Management
+    - A_Connect
+    - A_DeviceDescriptor_Read
+    - A_Disconnect
+
+    Parameters of the Management Procedure
+    NM_IndividualAddress_Check(/* [in] */ IA_test, /* [out] */ result, /* [out] */ DDType,
+    /* [out] */ DDx)
+        IA_test: Individual Address of which the occupation on the network has to be tested.
+        result:  Result back to the user of the Management Procedure to indicate whether the IA_test is
+                 occupied on the network or not.
+        DDType:  The Device Descriptor Type as reported by the device
+        DDx:     The Device Descriptor value according the format DDType as reported by the device.
+
+    Sequence
+
+    ```mermaid
+    sequenceDiagram
+        participant C as Management Client
+        participant S as Network / Management Server
+        C->>S: A_Connect-PDU (destination_address = IA_test)
+        alt negative A_Connect.Lcon ⇒ IA_test occupied; end procedure.
+        else this is, a positive A_Connect.Lcon is received
+            Note right of S: If the device that occupies the IA_test does not support Transport Layer connections, it shall send a T_Disconnect-PDU.
+            S->>C: A_Disconnect-PDU ()
+            Note over C,S: if A_Disconnect-PDU is received then IA_test shall be regarded as occupied; end procedure.
+            alt no A_Disconnect-PDU is received
+                Note right of S: If a device that occupies IA_test is present on the network, and does support Transport Layer connections, it shall have no other reaction on the bus than the Layer-2 acknowledge that initiates the above A_Connect.Lcon
+                Note over C,S: The A_DeviceDescriptor_Read-PDU shall use DD0.
+                C->>S: A_DeviceDescriptor_Read-PDU (destination_address = IA_test, descriptor_type = 0000h)
+                S->>C: A_DeviceDescriptor_Response-PDU (descriptor_type, device_descriptor)
+                Note over C,S: 1), 2)
+                Note over C,S: If the Management Client receives an A_DeviceDescriptor_Response-PDU it shall conclude that the Individual Address IA_test is occupied.
+                Note over C,S: if no A_DeviceDescriptor_Response-PDU is received after time-out ⇒ IA_test is not occupied
+            end
+        end
+        Note over C,S: 3)
+        C->>S: A_Disconnect-PDU (destination_address = IA_test)
+    ```
+
+    Possible reactions
+    1) If the Network Management Server reacts on the connection oriented
+       A_DeviceDescriptor_Read-PDU then the Management Client shall assume that the IA IA_test is
+       occupied on the network and that the device that occupies this IA_test supports the
+       connection-oriented Transport Layer.
+
+    2) The descriptor_type and the device_descriptor in the response by the device shall be reported
+       back via DDType respectively DDx. The Device Descriptor Type may differ from 0 and the
+       format of the Device Descriptor may be encoded accordingly as well.
+    3) If the Network Management Client receives an A_Disconnect-PDU and no A_Device-
+       Descriptor_Response-PDU, then the Management Client shall assume that the IA_test is occupied
+       on the network and that the device that occupies this IA_test does not support the
+       connection-oriented Transport Layer.
+
+Inputs (from spec):
+    (see body)
+"""
 
 from __future__ import annotations
 
