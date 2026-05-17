@@ -9,28 +9,29 @@ Spec text (verbatim from spec):
     A DM_Connect shall be executed before executing this Management Procedure.
     This device Management Procedure shall not be used for further developments of Management
     Servers.
-    DM_LCRouteTableStateRead                   (flags, routeTableState)
-            flags                bit 0       location of data (routeTableState)
-                                                0: in data block
-                                                1: -
-                                 All other bits are reserved. These shall be set to 0. This shall be tested by
-                                 the Management Client.
-            routeTableState      state of the routing table (see description of APDU)
+    DM_LCRouteTableStateRead (flags, routeTableState)
+        flags              bit 0    location of data (routeTableState)
+                                       0: in data block
+                                       1: -
+                           All other bits are reserved. These shall be set to 0. This shall be tested by
+                           the Management Client.
+        routeTableState    state of the routing table (see description of APDU)
 
     3.47.2 Procedure: DMP_LCRouteTableStateRead_RCo
     This Management Procedure shall use the connection oriented communication mode.
     Used Application Layer Services for Management
-        •      A_RouterStatus_Read
+    - A_RouterStatus_Read
 
     Sequence
-    Management                                                             Management                 remark
-    Client                                                                 Server
-                               A_RouterStatus_Read-PDU
-                                          ()
 
-                              A_RouterStatus_Response-PDU                               A_Disconnect.ind ⇒
-                                   (RouteTableState)                                    error,
-                                                                                        no data received ⇒ error
+    ```mermaid
+    sequenceDiagram
+        participant C as Management Client
+        participant S as Management Server
+        C->>S: A_RouterStatus_Read-PDU ()
+        S->>C: A_RouterStatus_Response-PDU (RouteTableState)
+        Note right of S: A_Disconnect.ind => error, no data received => error
+    ```
 
     Exception handling
     The general exception handling shall apply.

@@ -9,38 +9,30 @@ Spec text (verbatim from spec):
     Index(es) of one Object Type in one device.
     NM_ObjectIndex_Read (/* [in] */ ASAP, /* [in] */ comm_mode_req, /* [in] */ object_type,
        /* [in] */ PID, /* [in] */ test_info, /* [out] */ test_result, /* [in] */ comm_mode_res)
-            ASAP                                 PPPP = Individual Address of the Device in which the index of an
-                                                 Interface Object Type shall be discovered
-            comm_mode_req                        point-to-point, connectionless
-            object_type:                         nm_object_type: Interface Object Type of which the presence in the
-                                                 Management Server is to be discovered
-            PID:                                 PID_OBJECT_INDEX = 29 (see [05])
-            test_info:                           Octet 11:        start_instance of object_type
-                                                 Octet 12:        number_of_instances
-            test_result:                         Octet 13 … N: Object Index(es) of target object_type
-            comm_mode_res:                       point-to-point, connectionless
+        ASAP           PPPP = Individual Address of the Device in which the index of an
+                       Interface Object Type shall be discovered
+        comm_mode_req  point-to-point, connectionless
+        object_type:   nm_object_type: Interface Object Type of which the presence in the
+                       Management Server is to be discovered
+        PID:           PID_OBJECT_INDEX = 29 (see [05])
+        test_info:     Octet 11: start_instance of object_type
+                       Octet 12: number_of_instances
+        test_result:   Octet 13 … N: Object Index(es) of target object_type
+        comm_mode_res: point-to-point, connectionless
 
     Used Application Layer services for Management
-        •      A_NetworkParameter_Read
+    - A_NetworkParameter_Read
 
     Sequence
-    Management                                                            Network /               remark
-    Client                                                                Management
-                                                                          Server
 
-                            A_NetworkParameter_Read.req
-                   (ASAP = PPPP, comm_mode_req = point-to-point
-                     connectionless, object_type = nm_object_type,
-                         PID = 29, test_info = start_instance +
-                                 number_of_instances)
-
-                             A_NetworkParameter_Read.res                               Only one response shall be
-                        (object_type = nm_object_type, PID = 29,                       given to one read request. If
-                                                                                       one response is not enough to
-                    test_info = start_instance + number_of_instances,                  deliver all indexes, than the
-                              test_result = Object Index(es))                          Management Client shall
-                                                                                       read again with a higher start
-                                                                                       instance within the test_info.
+    ```mermaid
+    sequenceDiagram
+        participant C as Management Client
+        participant S as Network / Management Server
+        C->>S: A_NetworkParameter_Read.req (ASAP = PPPP, comm_mode_req = point-to-point connectionless, object_type = nm_object_type, PID = 29, test_info = start_instance + number_of_instances)
+        S->>C: A_NetworkParameter_Read.res (object_type = nm_object_type, PID = 29, test_info = start_instance + number_of_instances, test_result = Object Index(es))
+        Note right of S: Only one response shall be given to one read request. If one response is not enough to deliver all indexes, than the Management Client shall read again with a higher start instance within the test_info.
+    ```
 
     2.23.4.1 Management Server support
     If a Management Server receives this request, it shall answer with the total number of instances of
@@ -94,7 +86,7 @@ Spec text (verbatim from spec):
      (b)           >1               >0
                                                     Read_PDU          Read_PDU                                Management Server than what can be reported in
                                                                                                               a single A_NetworkParameter_Response-PDU.
-                                                                                                              This is a “lazy client” style: the Management
+                                                                                                              This is a "lazy client" style: the Management
                                                                                                               Client does not specify the number of instances it
                                                                       = number of                             wants, either because it expects that the number
                                                   as requested in                      All indexes starting   will fit in an L_Data_Standard frame, or expects

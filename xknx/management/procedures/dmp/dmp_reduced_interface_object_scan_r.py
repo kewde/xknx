@@ -7,22 +7,24 @@ Spec text (verbatim from spec):
     This Management Procedure shall scan the Interface Objects in a device with Reduced Interface
     Objects. Prior to this Management Procedure the Management Procedure DMP_Connect_RCl can be
     executed to identify the remote device.
+
     Sequence
-    Management                                                             Management                 remark
-    Client                                                                 Server
-    objectNr = 0;
-    repeat if Interface Object scan is enabled
-                              A_PropertyValue_Read-PDU                                  PID 01h is the Object Type
-                          (object_index = objectNr, PID = 01h,
-                        start_index = 01h, element_count = 01h)
 
-                            A_PropertyValue_Response-PDU                                A_Disconnect.ind ⇒ error,
-                 (object_index = objectNr, PID = 01h, start_index = 01h,                no data received ⇒ error
-                        element_count = 01h, data = object_type)
-
-                      endif
-    objectNr ++
-    until PID = 0
+    ```mermaid
+    sequenceDiagram
+        participant C as Management Client
+        participant S as Management Server
+        Note over C: objectNr = 0
+        loop repeat until PID = 0
+            opt Interface Object scan is enabled
+                C->>S: A_PropertyValue_Read-PDU (object_index = objectNr, PID = 01h, start_index = 01h, element_count = 01h)
+                Note right of S: PID 01h is the Object Type
+                S->>C: A_PropertyValue_Response-PDU (object_index = objectNr, PID = 01h, start_index = 01h, element_count = 01h, data = object_type)
+                Note right of S: A_Disconnect.ind ⇒ error, no data received ⇒ error
+            end
+            Note over C: objectNr++
+        end
+    ```
 
     Exception handling
     The general exception handling shall apply.

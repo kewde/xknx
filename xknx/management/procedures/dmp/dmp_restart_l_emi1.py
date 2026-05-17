@@ -4,20 +4,23 @@ DMP_Restart_LEmi1 — KNX 03.05.02 §3.7.4 (PDF p. 89).
 Spec text (verbatim from spec):
 
     This Management Procedure shall use the local communication with EMI 1.
+
     Used EMI-services for Management
-        •     PC_Set_Value
+    - PC_Set_Value
 
     Parameters of the Management Procedure
     DMP_Restart_LEmi1(/* [out] */ DmpError)
-        DmpError:                              Possible error indication.
+        DmpError    Possible error indication.
 
     Sequence
-    Management                                                              Management                remark
-    Client                                                                  Server
-                                 PC_Set_Value.req message
-                       (Length = 1 octet, Address = 0060h, data = C0h)
 
-                  wait until Management Server was restarted
+    ```mermaid
+    sequenceDiagram
+        participant C as Management Client
+        participant S as Management Server
+        C->>S: PC_Set_Value.req message (Length = 1 octet, Address = 0060h, data = C0h)
+        Note over C: wait until Management Server was restarted
+    ```
 
     Exception handling
     The general exception handling shall apply.

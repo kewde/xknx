@@ -3,16 +3,15 @@ NM_SearchRequestExtended_Multicast — KNX 03.05.02 §6.1 (PDF p. 183).
 
 Spec text (verbatim from spec):
 
-    Client                                                                             Server (device)
-
-                             SEARCH_REQUEST_EXTENDED
-                              (UDP, discovery endpoint, SRPs)
-
-                                                       Evaluates all SRPs from the request according the specification of the Seach
-                                                                                                          Request Parameters in [10]
-                                                                              If the result of the evaluation is to create a response:.
-                            SEARCH_RESPONSE_EXTENDED
-                                      (DIBs)
+    ```mermaid
+    sequenceDiagram
+        participant C as Client
+        participant S as Server (device)
+        C->>S: SEARCH_REQUEST_EXTENDED (UDP, discovery endpoint, SRPs)
+        Note right of S: Evaluates all SRPs from the request according the specification of the Seach Request Parameters in [10]
+        Note right of S: If the result of the evaluation is to create a response:.
+        S->>C: SEARCH_RESPONSE_EXTENDED (DIBs)
+    ```
 
     Collect all responses until either all expected responses
     have arrived, or a timeout of 3 seconds elapsed.

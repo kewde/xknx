@@ -4,28 +4,26 @@ DMP_ProgModeSwitch_LEmi1 — KNX 03.05.02 §3.13.3 (PDF p. 94).
 Spec text (verbatim from spec):
 
     This Management Procedure shall use the local communication with EMI 1.
-    The Programming Mode shall be realised as “Programming Mode – Realisation Type 2” as specified
+    The Programming Mode shall be realised as "Programming Mode - Realisation Type 2" as specified
     in [05].
-    NOTE         This means that the state of the Programming Mode is located at memory address 60h.
+    NOTE: This means that the state of the Programming Mode is located at memory address 60h.
 
     Used EMI-services for Management
-        •     PC_Get_Value.req
-        •     PEI_Memory_Write
+    - PC_Get_Value.req
+    - PEI_Memory_Write
 
     Sequence
-    Management                                                              Management                 remark
-    Client                                                                  Server
 
-                                  PC_Get_Value-PDU
-                                (Addr = 60h, Length = 1)
-
-                                 PC_Get_Value-PDU                                        different or no data received
-                         (Addr = 60h, Length = 1, Data = DD)                             ⇒ error
-
-                              PEI_Memory_Write-PDU                                       In the data (DD) bit 0 has to
-                         (Addr = 60h, Length = 1, Data = DD)                             be set according to the mode.
-                                                                                         The parity (bit 7) has to be
-                                                                                         calculated.
+    ```mermaid
+    sequenceDiagram
+        participant C as Management Client
+        participant S as Management Server
+        C->>S: PC_Get_Value-PDU (Addr = 60h, Length = 1)
+        S->>C: PC_Get_Value-PDU (Addr = 60h, Length = 1, Data = DD)
+        Note right of S: different or no data received ⇒ error
+        C->>S: PEI_Memory_Write-PDU (Addr = 60h, Length = 1, Data = DD)
+        Note right of S: In the data (DD) bit 0 has to be set according to the mode. The parity (bit 7) has to be calculated.
+    ```
 
     Exception handling
     The general exception handling shall apply.

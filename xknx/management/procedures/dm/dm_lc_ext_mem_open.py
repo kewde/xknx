@@ -13,13 +13,16 @@ Spec text (verbatim from spec):
     3.44.2 Procedure: DMP_LCExtMemOpen_RCo
     This Management Procedure shall use the connection oriented communication mode.
     Used Application Layer Services for Management
-        •      A_FilterTable_Open
+    - A_FilterTable_Open
 
     Sequence
-    Management                                                            Management                remark
-    Client                                                                Server
-                               A_FilterTable_Open-PDU
-                                          ()
+
+    ```mermaid
+    sequenceDiagram
+        participant C as Management Client
+        participant S as Management Server
+        C->>S: A_FilterTable_Open-PDU ()
+    ```
 
     Exception handling
     The general exception handling shall apply.

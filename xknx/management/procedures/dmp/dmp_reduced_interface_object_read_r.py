@@ -5,20 +5,19 @@ Spec text (verbatim from spec):
 
     Prior to this procedure the procedure DMP_Connect_RCl can be executed to identify the remote
     device.
+
     Sequence
-    Management                                                             Management                remark
-    Client                                                                 Server
 
-    for each data block, until all data is transmitted
-                            A_PropertyValue_Read-PDU
-                    (objectNr = OO, PID = PP, start_index = SSSS,
-                                 element_count = EE)
-
-                           A_PropertyValue_Response-PDU                                 A_Disconnect.ind ⇒ error,
-                    (objectNr = OO, PID = PP, start_index = SSSS,                       no data received ⇒ error
-                          element_count = EE, data = XX, ..)
-
-    endfor
+    ```mermaid
+    sequenceDiagram
+        participant C as Management Client
+        participant S as Management Server
+        loop for each data block, until all data is transmitted
+            C->>S: A_PropertyValue_Read-PDU (objectNr = OO, PID = PP, start_index = SSSS, element_count = EE)
+            S->>C: A_PropertyValue_Response-PDU (objectNr = OO, PID = PP, start_index = SSSS, element_count = EE, data = XX, ..)
+            Note right of S: A_Disconnect.ind ⇒ error, no data received ⇒ error
+        end
+    ```
 
 Inputs (from spec):
     (see body)

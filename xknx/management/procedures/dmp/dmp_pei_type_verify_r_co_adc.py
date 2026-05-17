@@ -5,25 +5,24 @@ Spec text (verbatim from spec):
 
     This Management Procedure shall use the connection oriented communication mode.
     The value shall be read via the service A_ADC_Read.
+
     Used Application Layer Services for Management
-        •      A_ADC_Read
+    - A_ADC_Read
 
     Sequence
-    Management                                                            Management                 remark
-    Client                                                                Server
-                                 A_ADC_Read-PDU
-                              (AD-channel = 4, count = 1)
 
-                                A_ADC_Response-PDU                                     A_Disconnect.ind ⇒
-                                  (AD-channel, Data)                                   error,
-                                                                                       different or no data received
-                                                                                       ⇒ error
+    ```mermaid
+    sequenceDiagram
+        participant C as Management Client
+        participant S as Management Server
+        C->>S: A_ADC_Read-PDU (AD-channel = 4, count = 1)
+        S->>C: A_ADC_Response-PDU (AD-channel, Data)
+        Note right of S: A_Disconnect.ind ⇒ error, different or no data received ⇒ error
+    ```
 
     The formula to calculate the PEI type is:
+        PEI_Type = (10 * ADC_Value + 60) / 128
 
-                                                       10 ⋅ ADC _ Value + 60
-                                       PEI _ Type =
-                                                               128
     Exception handling
     The general exception handling shall apply.
 
