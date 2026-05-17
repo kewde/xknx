@@ -55,14 +55,6 @@ Inputs (from spec):
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from xknx.management.procedures.dmp.dmp_authorize2_r_co import dmp_authorize2_r_co
 
-if TYPE_CHECKING:
-    from xknx import XKNX
-
-
-async def dm_authorize2_r_co(xknx: XKNX) -> None:
-    """DM_Authorize2_RCo — see module docstring for the verbatim spec text."""
-    raise NotImplementedError(
-        "DM_Authorize2_RCo (KNX 03.05.02 §3.5.2) — implementation pending"
-    )
+__all__ = ["dmp_authorize2_r_co"]

@@ -1,43 +1,11 @@
 """
-DM_Authorize — KNX 03.05.02 §3.5 (PDF p. 74).
+DMP_Authorize2_RCo — KNX 03.05.02 §3.5.2 (PDF p. 74).
+
+NOTE: The spec names this "DM_Authorize2_RCo" but it follows the DMP pattern
+(connection-oriented procedure implementation), so we treat it as DMP here.
 
 Spec text (verbatim from spec):
 
-    Use
-    This device Management Procedure shall be used to obtain access authorization. The authorization
-    shall be executed only when it is required by the Management Server.
-    Whether or not a Management Server supports authorisation can directly be retrieved from the Device
-    Descriptor Type 0 (mask version). In [14] it is specified for which Profiles authorisation is mandatory.
-    DM_Connect shall be executed before executing this Management Procedure.
-
-    DM_Authorize (flags, keys)
-        flags   All bits are reserved. These shall be set to 0. This shall be tested
-                by the Management Client.
-        key     key for authorization
-
-    3.5.1 Procedure: DMP_Authorize_RCo
-    This Management Procedure shall use the connection oriented communication mode.
-
-    Used Application Layer Services for Management
-    - A_Authorize
-
-    Sequence
-
-    ```mermaid
-    sequenceDiagram
-        participant C as Management Client
-        participant S as Management Server
-        opt authorization is required (key != FFFF FFFFH)
-            C->>S: A_Authorize_Request-PDU (key)
-            S->>C: A_Authorize_Response-PDU (key, level)
-            Note right of S: A_Disconnect.ind ⇒ error: connection was broken down
-        end
-    ```
-
-    Exception handling
-    The general exception handling shall apply.
-
-    3.5.2 DM_Authorize2_RCo
     Use
     This device Management Procedure DM_Authorize2_RCo shall be used to obtain access
     authorization. It shall assume that the Management Client has an access key provided by its user. If the
@@ -90,10 +58,39 @@ Inputs (from spec):
 
 from __future__ import annotations
 
-from xknx.management.procedures.dmp.dmp_authorize2_r_co import dmp_authorize2_r_co
+from typing import TYPE_CHECKING
+
 from xknx.management.procedures.dmp.dmp_authorize_r_co import (
     FREE_ACCESS_KEY,
     dmp_authorize_r_co,
 )
 
-__all__ = ["FREE_ACCESS_KEY", "dmp_authorize2_r_co", "dmp_authorize_r_co"]
+if TYPE_CHECKING:
+    from xknx.management.management import P2PConnection
+
+
+async def dmp_authorize2_r_co(connection: P2PConnection, client_key: int) -> int:
+    """
+    Authorize with a KNX device, comparing free access vs client key.
+
+    DMP_Authorize2_RCo — KNX 03.05.02 §3.5.2. Tries free access first,
+    then client key, and uses whichever gives better (lower) access level.
+
+    NOTE: The spec names this "DM_Authorize2_RCo" but it follows the DMP pattern.
+
+    :param connection: Active P2P connection to the device
+    :param client_key: 4-byte client authorization key
+    :return: Best access level obtained (0 = highest, 15 = lowest)
+    """
+    free_level = await dmp_authorize_r_co(connection, FREE_ACCESS_KEY)
+
+    if free_level == 0:
+        return free_level
+
+    client_level = await dmp_authorize_r_co(connection, client_key)
+
+    if client_level > free_level:
+        await dmp_authorize_r_co(connection, FREE_ACCESS_KEY)
+        return free_level
+
+    return client_level
