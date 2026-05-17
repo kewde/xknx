@@ -5,11 +5,15 @@ Spec text (verbatim from spec):
 
     Used Application Layer Services for Management
     None.
-    Sequence
-    Management                                                              Management                remark
-    Client                                                                  Server
 
-                  delay for specified time
+    Sequence
+
+    ```mermaid
+    sequenceDiagram
+        participant C as Management Client
+        participant S as Management Server
+        Note over C: delay for specified time
+    ```
 
     Exception handling
     The general exception handling shall apply.

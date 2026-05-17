@@ -8,30 +8,25 @@ Spec text (verbatim from spec):
     connectionless communication mode. In case the point-to-point connection-oriented communication
     mode is used, a DMP_Connect_RCo shall be performed preceding this procedure.
     Used Application Layer Services for Management
-        •     A_FunctionPropertyCommand
+    - A_FunctionPropertyCommand
 
     Parameters used during this Management Procedure
-    • OI:      Object Index of the Interface Object in which the Function Property is located.
-    • PID:     Property Identifier of the Function Property
-    • command: The command that is requested of the Function Property. The coding shall be
+    - OI:      Object Index of the Interface Object in which the Function Property is located.
+    - PID:     Property Identifier of the Function Property
+    - command: The command that is requested of the Function Property. The coding shall be
                Function Property specific and is specified in [05]
-    • error:   Error code returned by the Function Property Server.
+    - error:   Error code returned by the Function Property Server.
 
     Sequence
-         Management                                                       Management
-              Client                                                      Server     remark
 
-                             A_FunctionPropertyCommand-PDU
-                            (object_index = OI, Property_id = PID,
-                                       data = command)
-
-                                                                          The Management Server shall execute
-                                                                          the Function Property and return the
-                                                                          result and error indication to the
-                                                                          Management Client.
-                          A_FunctionPropertyState_Response-PDU
-                           (object_index = OI, Property_id = PID,
-                            return_code = error, data = command)
+    ```mermaid
+    sequenceDiagram
+        participant C as Management Client
+        participant S as Management Server
+        C->>S: A_FunctionPropertyCommand-PDU (object_index = OI, Property_id = PID, data = command)
+        Note right of S: The Management Server shall execute the Function Property and return the result and error indication to the Management Client.
+        S->>C: A_FunctionPropertyState_Response-PDU (object_index = OI, Property_id = PID, return_code = error, data = command)
+    ```
 
     Error handling
     The error shall be Function Property specific and is specified in [05]. The handling of this error
@@ -41,21 +36,18 @@ Spec text (verbatim from spec):
     This Management Procedure shall use the connection oriented or connectionless communication
     mode.
     Used Application Layer Services for Management
-        •   A_FunctionPropertyExtCommand
+    - A_FunctionPropertyExtCommand
 
     Sequence
-    Management                                                             Management
-    Client                                                                 Server
 
-                       A_ FunctionPropertyExtCommand-PDU
-                  (object_type = OT, object_instance = OI, PID = PP,
-                                  data = command)
-
-                                                                                        The Management Server
-                     A_FunctionPropertyExtState_Response-PDU                            shall execute the Function
-                  (object_type = OT, object_instance = OI, PID = PP,                    Property and return the
-                         return_code = RC, data = output data)                          result and error indication
-                                                                                        to the Management Client
+    ```mermaid
+    sequenceDiagram
+        participant C as Management Client
+        participant S as Management Server
+        C->>S: A_ FunctionPropertyExtCommand-PDU (object_type = OT, object_instance = OI, PID = PP, data = command)
+        S->>C: A_FunctionPropertyExtState_Response-PDU (object_type = OT, object_instance = OI, PID = PP, return_code = RC, data = output data)
+        Note right of S: The Management Server shall execute the Function Property and return the result and error indication to the Management Client
+    ```
 
     Exception handling
     The error shall be Function Property specific and is specified in [05]. The handling of this error

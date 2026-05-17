@@ -10,22 +10,23 @@ Spec text (verbatim from spec):
     On KNX RF, the A_DeviceDescriptor_InfoReport-PDU shall betransmitted in a RF
     AddrExtensionType = 0; the frame shall then contain the KNX Serial Number of the sender.
     Used Application Layer Services for Management
-          • A_DeviceDescriptor_InfoReport
+    - A_DeviceDescriptor_InfoReport
 
     Parameters of the Management Procedure
-    DM_DeviceDescriptor_InfoReport             (/* [in] */ DM_DDType, /* [in] */ DM_DD)
-           DM_DDType                   type of the Device Descriptor
-           DM_DD                       the Device Descriptor of the device
+    DM_DeviceDescriptor_InfoReport (/* [in] */ DM_DDType, /* [in] */ DM_DD)
+        DM_DDType    type of the Device Descriptor
+        DM_DD        the Device Descriptor of the device
     This Management Procedure shall use the system broadcast communication mode.
 
     Sequence
-     Management                                                      Management Client                remark
-          Server
 
-                                                                     Set client in teaching mode.
-                        A_DeviceDescriptor_InfoReport-PDU
-                          (descriptor_type = DM_DDType,
-                            device_descriptor = DM_DD)
+    ```mermaid
+    sequenceDiagram
+        participant S as Management Server
+        participant C as Management Client
+        Note right of C: Set client in teaching mode.
+        S->>C: A_DeviceDescriptor_InfoReport-PDU (descriptor_type = DM_DDType, device_descriptor = DM_DD)
+    ```
 
     Error and exception handling
     Not applicable.

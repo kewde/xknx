@@ -9,21 +9,22 @@ Spec text (verbatim from spec):
     shall be verified immediately.
     The Load State Machines are specified in [05].
     A DM_Connect shall be executed before executing this Management Procedure.
-    DM_LoadStateMachineWrite                   (flags, stateMachineType, stateMachineNr, event, eventData)
-          flags                    bit 0 :   location of data
-                                                   0: -
-                                                   1: in management control
-                                   bit 1 :   verify resulting state enabled / disabled
-                                                   0: disabled
-                                                   1: enabled
-                                   All other bits are reserved. These shall be set to 0. This shall be tested by
-                                   the Management Client.
-          stateMachineType         type of the object that contains the state machine:
 
-                                                    type       state machine
-                                                    0001       address table
-                                                    0002       association table
-                                                    0003       application program
+    DM_LoadStateMachineWrite (flags, stateMachineType, stateMachineNr, event, eventData)
+        flags             bit 0: location of data
+                              0: -
+                              1: in management control
+                          bit 1: verify resulting state enabled / disabled
+                              0: disabled
+                              1: enabled
+                          All other bits are reserved. These shall be set to 0. This shall be tested by
+                          the Management Client.
+        stateMachineType  type of the object that contains the state machine:
+
+                          type   state machine
+                          0001   address table
+                          0002   association table
+                          0003   application program
 
 Inputs (from spec):
     (see body)

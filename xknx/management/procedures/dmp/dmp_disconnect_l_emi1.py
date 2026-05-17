@@ -5,11 +5,13 @@ Spec text (verbatim from spec):
 
     Use
     This Management Procedure shall use the local communication with EMI 1.
+
     Used EMI-services for Management
-     None
+    None
 
     Parameters of the Management Procedure
     DMP_Disconnect_LEmi1()
+
     Sequence
     None.
 

@@ -3,22 +3,26 @@ DM_Delay — KNX 03.05.02 §3.8 (PDF p. 90).
 
 Spec text (verbatim from spec):
 
-    3.8.1        Use
+    3.8.1 Use
     This device Management Procedure shall be used to wait a specified time before starting the next
     action.
-    DM_Delay            (flags, delay time)
-          delay time                     Time in milliseconds
-          flags                          All bits are reserved. These shall be set to 0. This shall be tested
-                                         by the Management Client.
+    DM_Delay (flags, delay time)
+        delay time    Time in milliseconds
+        flags         All bits are reserved. These shall be set to 0. This shall be tested
+                      by the Management Client.
 
-    3.8.2        Procedure: DMP_Delay
+    3.8.2 Procedure: DMP_Delay
     Used Application Layer Services for Management
     None.
-    Sequence
-    Management                                                              Management                remark
-    Client                                                                  Server
 
-                  delay for specified time
+    Sequence
+
+    ```mermaid
+    sequenceDiagram
+        participant C as Management Client
+        participant S as Management Server
+        Note over C,S: delay for specified time
+    ```
 
     Exception handling
     The general exception handling shall apply.
