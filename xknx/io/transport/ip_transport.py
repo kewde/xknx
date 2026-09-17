@@ -24,10 +24,9 @@ knx_logger = logging.getLogger("xknx.knx")
 class KNXIPTransport(ABC):
     """Abstract base class for KNX/IP transports."""
 
-    __slots__ = ("callbacks", "local_hpai", "remote_addr", "transport")
+    __slots__ = ("callbacks", "remote_addr", "transport")
 
     callbacks: list[KNXIPTransport.Callback]
-    local_hpai: HPAI
     remote_addr: tuple[str, int]
     transport: asyncio.BaseTransport | None
 
@@ -95,14 +94,6 @@ class KNXIPTransport(ABC):
                 "No transport defined. Socket information not resolveable"
             )
         return cast(tuple[str, int], self.transport.get_extra_info("sockname"))
-
-    def getremote(self) -> str | None:
-        """Return peername."""
-        return (
-            self.transport.get_extra_info("peername")
-            if self.transport is not None
-            else None
-        )
 
     def stop(self) -> None:
         """Stop socket."""
