@@ -6,6 +6,12 @@ nav_order: 2
 
 # Changelog
 
+# Unreleased
+
+### Devices
+
+- Cover: Fix `set_position` reporting a phantom position when neither `group_address_long` nor `group_address_position` is configured. `set_up` / `set_down` now warn instead of silently no-oping on such a device.
+
 # 3.15.0 Task improvements 2026-02-15
 
 ### Telegram
