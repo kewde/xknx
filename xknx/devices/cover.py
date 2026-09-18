@@ -177,6 +177,8 @@ class Cover(Device):
             )
         elif self.position_target.writable:
             self.position_target.set(self.travelcalculator.position_closed)
+        else:
+            logger.warning("Moving not supported for device %s", self.get_name())
 
     async def set_up(self) -> None:
         """Move cover up."""
@@ -188,6 +190,8 @@ class Cover(Device):
             )
         elif self.position_target.writable:
             self.position_target.set(self.travelcalculator.position_open)
+        else:
+            logger.warning("Moving not supported for device %s", self.get_name())
 
     async def set_short_down(self) -> None:
         """Move cover short down."""
@@ -222,6 +226,9 @@ class Cover(Device):
         """Move cover to a desginated position."""
         if self.position_target.writable:
             self.position_target.set(position)
+            return
+        if not self.updown.writable:
+            logger.warning("Positioning not supported for device %s", self.get_name())
             return
         # No direct positioning group address defined
         # fully open or close is always possible even if current position is not known

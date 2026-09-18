@@ -619,6 +619,159 @@ class TestCover:
         )
         await cover.stop()  # clean up tasks
 
+    async def test_set_position_no_long_no_position_known(self) -> None:
+        """
+        set_position shall not lock a phantom position without long/position GA.
+
+        Covers the known-position path: a cover with short + stop + position_state
+        but neither group_address_long nor group_address_position. Moving to an
+        intermediate target must not start the travel calculator, must not
+        schedule the auto-stopper, must send no telegram and must leave the
+        real position unchanged.
+        """
+        xknx = XKNX()
+        cover = Cover(
+            xknx,
+            "StepOnlyCover",
+            group_address_short="1/2/2",
+            group_address_stop="1/2/0",
+            group_address_position_state="1/2/4",
+            travel_time_down=10,
+            travel_time_up=10,
+        )
+        # triggering configuration
+        assert not cover.supports_position
+        assert cover.supports_stop
+        # establish a known real position from the bus (40 %)
+        cover.process(
+            Telegram(
+                destination_address=GroupAddress("1/2/4"),
+                payload=GroupValueWrite(DPTArray(0x66)),
+            )
+        )
+        assert cover.current_position() == 40
+        assert cover._auto_stop_task.done()
+        assert cover._periodic_update_task.done()
+
+        with patch("logging.Logger.warning") as mock_warn:
+            await cover.set_position(60)
+            assert xknx.telegrams.qsize() == 0
+            mock_warn.assert_called_once_with(
+                "Positioning not supported for device %s", "StepOnlyCover"
+            )
+
+        # no travel started, no phantom position lock, no auto-stopper scheduled
+        assert not cover.is_traveling()
+        assert cover.current_position() == 40
+        assert cover._auto_stop_task.done()
+        assert cover._periodic_update_task.done()
+        # a subsequent real position_state write still updates the position
+        cover.process(
+            Telegram(
+                destination_address=GroupAddress("1/2/4"),
+                payload=GroupValueWrite(DPTArray(0x33)),
+            )
+        )
+        assert cover.current_position() == 20
+        assert xknx.telegrams.qsize() == 0
+
+    async def test_set_position_no_long_no_position_uninitialized(self) -> None:
+        """
+        set_position shall not lock a phantom endpoint when position is unknown.
+
+        Covers the unknown-position / endpoint path: with neither long nor
+        position GA configured, moving to an open/close endpoint must not
+        instantly confirm the position and must send no telegram.
+        """
+        xknx = XKNX()
+        cover = Cover(
+            xknx,
+            "UninitCover",
+            group_address_short="1/2/2",
+            group_address_stop="1/2/0",
+            group_address_position_state="1/2/4",
+            travel_time_down=10,
+            travel_time_up=10,
+        )
+        assert cover.current_position() is None
+        assert not cover.supports_position
+        assert cover.supports_stop
+
+        # moving to fully-open endpoint
+        with patch("logging.Logger.warning") as mock_warn:
+            await cover.set_position(0)  # position_open
+            assert xknx.telegrams.qsize() == 0
+            mock_warn.assert_called_once_with(
+                "Positioning not supported for device %s", "UninitCover"
+            )
+        # position stays unknown - no phantom endpoint lock
+        assert cover.current_position() is None
+        assert not cover.is_traveling()
+        assert cover._auto_stop_task.done()
+        assert cover._periodic_update_task.done()
+
+        # moving to fully-closed endpoint behaves identically
+        with patch("logging.Logger.warning") as mock_warn:
+            await cover.set_position(100)  # position_closed
+            assert xknx.telegrams.qsize() == 0
+            mock_warn.assert_called_once_with(
+                "Positioning not supported for device %s", "UninitCover"
+            )
+        assert cover.current_position() is None
+        assert not cover.is_traveling()
+
+        # a subsequent real position_state write sets the real position
+        cover.process(
+            Telegram(
+                destination_address=GroupAddress("1/2/4"),
+                payload=GroupValueWrite(DPTArray(0x66)),
+            )
+        )
+        assert cover.current_position() == 40
+        assert xknx.telegrams.qsize() == 0
+
+    async def test_set_up_down_no_long_no_position(self) -> None:
+        """set_up/set_down shall warn and not move without long/position GA."""
+        xknx = XKNX()
+        cover = Cover(
+            xknx,
+            "StepOnlyCoverUpDown",
+            group_address_short="1/2/2",
+            group_address_stop="1/2/0",
+            group_address_position_state="1/2/4",
+            travel_time_down=10,
+            travel_time_up=10,
+        )
+        cover.process(
+            Telegram(
+                destination_address=GroupAddress("1/2/4"),
+                payload=GroupValueWrite(DPTArray(0x66)),
+            )
+        )
+        assert cover.current_position() == 40
+
+        with patch("logging.Logger.warning") as mock_warn:
+            await cover.set_up()
+            assert xknx.telegrams.qsize() == 0
+            mock_warn.assert_called_once_with(
+                "Moving not supported for device %s", "StepOnlyCoverUpDown"
+            )
+        assert not cover.is_traveling()
+        assert cover.current_position() == 40
+        assert cover._auto_stop_task.done()
+        assert cover._periodic_update_task.done()
+
+        with patch("logging.Logger.warning") as mock_warn:
+            await cover.set_down()
+            assert xknx.telegrams.qsize() == 0
+            mock_warn.assert_called_once_with(
+                "Moving not supported for device %s", "StepOnlyCoverUpDown"
+            )
+        assert not cover.is_traveling()
+        assert cover.current_position() == 40
+        assert cover._auto_stop_task.done()
+        assert cover._periodic_update_task.done()
+
     async def test_angle(self) -> None:
         """Test changing angle."""
         xknx = XKNX()
