@@ -444,6 +444,111 @@ class TestExposeSensor:
 
         await xknx.stop()
 
+    async def test_read_after_incoming_write(
+        self, time_travel: EventLoopClockAdvancer
+    ) -> None:
+        """GroupValueRead after incoming GroupValueWrite returns current value."""
+        xknx = XKNX()
+        xknx.connection_manager.connection_state_changed(XknxConnectionState.CONNECTED)
+        xknx.cemi_handler = AsyncMock()
+        await xknx.telegram_queue.start()
+
+        # Test with cooldown disabled (0) and with cooldown fully elapsed (10)
+        for cooldown in (0, 10):
+            xknx.cemi_handler.send_telegram.reset_mock()
+            expose_sensor = ExposeSensor(
+                xknx,
+                "TestSensor",
+                group_address="1/2/3",
+                value_type="temperature",
+                cooldown=cooldown,
+            )
+            xknx.devices.async_add(expose_sensor)
+
+            await expose_sensor.set(21.0)  # locally set 21.0
+            await time_travel(0)
+            if cooldown:
+                await time_travel(cooldown)  # let cooldown fully elapse
+            assert expose_sensor.resolve_state() == 21.0
+            assert (
+                expose_sensor._cooldown_task is None
+                or expose_sensor._cooldown_task.done()
+            )
+            xknx.cemi_handler.send_telegram.reset_mock()
+
+            # incoming GroupValueWrite = 10.0 from another bus participant
+            expose_sensor.process(
+                Telegram(
+                    direction=TelegramDirection.INCOMING,
+                    destination_address=GroupAddress("1/2/3"),
+                    payload=GroupValueWrite(DPTArray((0x03, 0xE8))),
+                )
+            )
+            await time_travel(0)
+            assert expose_sensor.resolve_state() == 10.0  # sensor_value.value updated
+
+            # incoming GroupValueRead shall be answered with the *current* value
+            expose_sensor.process(
+                Telegram(GroupAddress("1/2/3"), payload=GroupValueRead())
+            )
+            await time_travel(0)
+            assert xknx.cemi_handler.send_telegram.call_args_list == [
+                call(
+                    Telegram(
+                        destination_address=GroupAddress("1/2/3"),
+                        payload=GroupValueResponse(DPTArray((0x03, 0xE8))),  # 10.0
+                    )
+                ),
+            ]
+            xknx.devices.async_remove(expose_sensor)
+
+        await xknx.stop()
+
+    async def test_read_during_active_cooldown_returns_pending_value(
+        self, time_travel: EventLoopClockAdvancer
+    ) -> None:
+        """GroupValueRead during an active cooldown answers with the pending value."""
+        xknx = XKNX()
+        xknx.connection_manager.connection_state_changed(XknxConnectionState.CONNECTED)
+        xknx.cemi_handler = AsyncMock()
+        await xknx.telegram_queue.start()
+
+        expose_sensor = ExposeSensor(
+            xknx,
+            "TestSensor",
+            group_address="1/2/3",
+            value_type="temperature",
+            cooldown=10,
+        )
+        xknx.devices.async_add(expose_sensor)
+
+        await expose_sensor.set(21.0)  # sent immediately, starts cooldown
+        await time_travel(0)
+        assert expose_sensor._cooldown_task is not None
+        assert expose_sensor._cooldown_task.done() is False
+
+        # a newer value is pending behind the active cooldown (not sent yet)
+        await expose_sensor.set(10.0)
+        await time_travel(0)
+        assert expose_sensor._cooldown_task.done() is False
+        xknx.cemi_handler.send_telegram.reset_mock()
+
+        # an incoming GroupValueRead is answered with the pending value (cooldown
+        # bypass) and restarts the cooldown timer
+        expose_sensor.process(Telegram(GroupAddress("1/2/3"), payload=GroupValueRead()))
+        await time_travel(0)
+        assert xknx.cemi_handler.send_telegram.call_args_list == [
+            call(
+                Telegram(
+                    destination_address=GroupAddress("1/2/3"),
+                    payload=GroupValueResponse(DPTArray((0x03, 0xE8))),  # 10.0 pending
+                )
+            ),
+        ]
+        assert expose_sensor._cooldown_task.done() is False
+
+        await xknx.stop()
+
     async def test_set_same_payload(self, time_travel: EventLoopClockAdvancer) -> None:
         """Test expose sensor with similar payloads in cooldown."""
         xknx = XKNX()
