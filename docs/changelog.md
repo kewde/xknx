@@ -6,6 +6,13 @@ nav_order: 2
 
 # Changelog
 
+# Unreleased
+
+### Data Secure
+
+- Fix `SecurityALService.S_A_SYNC_REQ` enum value (`0b001` was reserved per AN158 v07; corrected to `0b010`) so incoming S-A_Sync.req frames parse instead of raising an uncaught `ValueError`.
+- Catch `ValueError` in `CEMIHandler.handle_raw_cemi` when parsing CEMI frames so reserved Security Control Field values degrade to a logged drop rather than an unhandled exception.
+
 # 3.15.0 Task improvements 2026-02-15
 
 ### Telegram

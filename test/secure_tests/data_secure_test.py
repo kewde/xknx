@@ -12,6 +12,7 @@ from xknx.dpt import DPTArray
 from xknx.exceptions import DataSecureError
 from xknx.secure.data_secure import is_data_secure
 from xknx.secure.data_secure_asdu import (
+    SecureData,
     SecurityAlgorithmIdentifier,
     SecurityALService,
     SecurityControlField,
@@ -435,3 +436,54 @@ class TestDataSecure:
             match=r"Data Secure MAC verification failed.*",
         ):
             self.data_secure.received_cemi(incoming_cemi.data)
+
+    def test_received_secure_cemi_rejects_sync_req(
+        self, test_group_response_cemi: CEMIFrame
+    ) -> None:
+        """Test S-A_Sync.req is rejected cleanly (DataSecureError, not a crash)."""
+        assert self.data_secure is not None
+        # S-A_Sync.req parses now (was a ValueError before the enum fix); with keys
+        # initialized the intended clean-rejection path raises DataSecureError at
+        # the "only S_A_DATA supported" guard, before any decryption attempt.
+        cemi_data = test_group_response_cemi.data
+        assert isinstance(cemi_data, CEMILData)
+        scf = SecurityControlField(
+            algorithm=SecurityAlgorithmIdentifier.CCM_ENCRYPTION,
+            service=SecurityALService.S_A_SYNC_REQ,
+            system_broadcast=False,
+            tool_access=False,
+        )
+        s_apdu = apci.SecureAPDU(
+            scf=scf,
+            secured_data=SecureData(
+                sequence_number_bytes=b"\x00\x00\x00\x00\x00\x01",
+                secured_apdu=b"",
+                message_authentication_code=b"\x00\x00\x00\x00",
+            ),
+        )
+        with pytest.raises(
+            DataSecureError,
+            match=r"Only SecurityALService.S_A_DATA supported.*",
+        ):
+            self.data_secure._received_secure_cemi(cemi_data, s_apdu)
+
+        # S-A_Sync.res is rejected by the same guard
+        scf_res = SecurityControlField(
+            algorithm=SecurityAlgorithmIdentifier.CCM_ENCRYPTION,
+            service=SecurityALService.S_A_SYNC_RES,
+            system_broadcast=False,
+            tool_access=False,
+        )
+        s_apdu_res = apci.SecureAPDU(
+            scf=scf_res,
+            secured_data=SecureData(
+                sequence_number_bytes=b"\x00\x00\x00\x00\x00\x01",
+                secured_apdu=b"",
+                message_authentication_code=b"\x00\x00\x00\x00",
+            ),
+        )
+        with pytest.raises(
+            DataSecureError,
+            match=r"Only SecurityALService.S_A_DATA supported.*",
+        ):
+            self.data_secure._received_secure_cemi(cemi_data, s_apdu_res)

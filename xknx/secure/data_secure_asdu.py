@@ -63,7 +63,7 @@ class SecurityALService(IntEnum):
     """Enum representing the used security application layer service."""
 
     S_A_DATA = 0b000
-    S_A_SYNC_REQ = 0b001
+    S_A_SYNC_REQ = 0b010
     S_A_SYNC_RES = 0b011
 
 
