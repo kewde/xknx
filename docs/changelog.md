@@ -6,6 +6,12 @@ nav_order: 2
 
 # Changelog
 
+# Unreleased
+
+### Connection
+
+- GatewayScanner: Don't drop Search/Description Responses when a device includes a DIB with an unknown (reserved or vendor) type code; parse it as a generic DIB so mandatory DIBs are preserved.
+
 # 3.15.0 Task improvements 2026-02-15
 
 ### Telegram

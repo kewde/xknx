@@ -33,7 +33,7 @@ class TestKNXIPDIB:
 
     def test_dib_wrong_input(self) -> None:
         """Test parsing of wrong KNX/IP DIB packet."""
-        raw = (0x08, 0x01, 0xC0, 0xA8, 0x2A)
+        raw = bytes((0x08, 0x01, 0xC0, 0xA8, 0x2A))
         with pytest.raises(CouldNotParseKNXIP):
             DIBGeneric().from_knx(raw)
 
@@ -169,3 +169,19 @@ class TestKNXIPDIB:
         assert not dib.slots[IndividualAddress("4.0.8")].free
 
         assert dib.to_knx() == raw
+
+    def test_determine_dib_unknown_type_code(self) -> None:
+        """
+        Test determining DIB with a type code not in the DIBTypeCode enum.
+
+        Reserved / vendor / future type codes shall fall through to the generic
+        DIB rather than raising ValueError (which would escape the transports'
+        CouldNotParseKNXIP guard and drop the entire response frame).
+        """
+        for code in (0x00, 0x09, 0xFD, 0xFF):
+            raw = bytes((0x04, code, 0xAA, 0xBB))
+            dib = DIB.determine_dib(raw)
+            assert type(dib) is DIBGeneric
+            assert dib.from_knx(raw) == 4
+            assert dib.dtc == code
+            assert dib.data == b"\xaa\xbb"
