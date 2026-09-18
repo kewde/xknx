@@ -6,6 +6,12 @@ nav_order: 2
 
 # Changelog
 
+# Unreleased
+
+### Connection
+
+- Automatic connection mode: Connect to secure-routing-only gateways instead of silently reporting a successful connection.
+
 # 3.15.0 Task improvements 2026-02-15
 
 ### Telegram
