@@ -405,6 +405,20 @@ def test_valid_error_write_con() -> None:
 
 
 @pytest.mark.parametrize(
+    "error_byte",
+    [
+        0x0B,  # first value past the valid CEMIErrorCode range (0x00-0x0A)
+        0xFF,  # high out-of-range value
+    ],
+)
+def test_invalid_error_code_write_con(error_byte: int) -> None:
+    """Test M_PROP_WRITE_CON error response with out-of-range error code raises CouldNotParseCEMI."""
+    raw = get_prop(0xF5, 0x000B, 1, 52, 0, 1, [error_byte])
+    with pytest.raises(CouldNotParseCEMI, match=r".*Invalid CEMI error code:.*"):
+        CEMIFrame.from_knx(raw)
+
+
+@pytest.mark.parametrize(
     "raw,err_msg",
     [
         (

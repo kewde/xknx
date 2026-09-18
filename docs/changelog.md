@@ -6,6 +6,12 @@ nav_order: 2
 
 # Changelog
 
+# 3.15.1 Fix M_PROP_WRITE_CON parsing 2026-09-18
+
+### Internals
+
+- CEMI: Raise `CouldNotParseCEMI` instead of an uncaught `ValueError` when parsing a `M_PROP_WRITE_CON` (Device Management Property Write Confirmation) error response whose error-code byte is outside the valid `CEMIErrorCode` range. The malformed frame is now counted in `cemi_count_incoming_error` and logged via the `xknx.cemi` logger like other unparsable CEMI frames, instead of escaping to the asyncio loop's default exception handler.
+
 # 3.15.0 Task improvements 2026-02-15
 
 ### Telegram
