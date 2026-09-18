@@ -26,6 +26,10 @@ nav_order: 2
 - Add TaskRegistry Task `repeat_after` option to automatically restart the task periodically.
 - Remove TaskRegistry.register `track_task` option. All tasks used this option before and it is now the default behaviour.
 
+### Connection
+
+- Tunnelling: Don't raise `IndexError` when parsing a `TUNNELLING_REQUEST` with an empty body (e.g. `total_length == 6`); raise `CouldNotParseKNXIP` instead so the transport drops the frame instead of tearing down TCP connections.
+
 # 3.14.0 ExposeSensor improvements 2026-01-12
 
 ### Devices

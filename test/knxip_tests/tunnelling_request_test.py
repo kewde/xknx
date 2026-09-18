@@ -60,3 +60,15 @@ class TestKNXIPTunnellingRequest:
         raw = bytes((0x06, 0x10, 0x04, 0x20, 0x00, 0x15, 0x04))
         with pytest.raises(CouldNotParseKNXIP):
             KNXIPFrame.from_knx(raw)
+
+    def test_from_knx_empty_body(self) -> None:
+        """Empty body (total_length == 6) must raise CouldNotParseKNXIP, not IndexError."""
+        raw = bytes((0x06, 0x10, 0x04, 0x20, 0x00, 0x06))
+        with pytest.raises(CouldNotParseKNXIP):
+            KNXIPFrame.from_knx(raw)
+
+    def test_from_knx_empty_raw_body_raises_couldnotparse(self) -> None:
+        """Empty raw body passed directly to the parser must raise CouldNotParseKNXIP."""
+        tunnelling_request = TunnellingRequest()
+        with pytest.raises(CouldNotParseKNXIP):
+            tunnelling_request.from_knx(b"")
