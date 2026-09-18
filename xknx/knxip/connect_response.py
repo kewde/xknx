@@ -43,7 +43,12 @@ class ConnectResponse(KNXIPBodyResponse):
         """Parse/deserialize from KNX/IP raw data."""
 
         self.communication_channel = raw[0]
-        self.status_code = ErrorCode(raw[1])
+        try:
+            self.status_code = ErrorCode(raw[1])
+        except ValueError:
+            raise CouldNotParseKNXIP(
+                "ConnectResponse body has invalid status code"
+            ) from None
         pos = 2
 
         if self.status_code == ErrorCode.E_NO_ERROR:

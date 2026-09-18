@@ -130,3 +130,15 @@ class TestKNXIPTunnellingFeature:
         raw = bytes.fromhex("06 10 04 24 00 0c 04 01 17 00 03 00")
         with pytest.raises(CouldNotParseKNXIP):
             KNXIPFrame.from_knx(raw)
+
+    def test_get_with_unknown_status_code(self) -> None:
+        """Test parsing TunnellingFeatureGet with unknown status code raises CouldNotParseKNXIP."""
+        raw = bytes.fromhex("06 10 04 22 00 0c 04 01 17 03 03 00")
+        with pytest.raises(CouldNotParseKNXIP):
+            KNXIPFrame.from_knx(raw)
+
+    def test_response_with_unknown_status_code(self) -> None:
+        """Test parsing TunnellingFeatureResponse with unknown status code raises CouldNotParseKNXIP."""
+        raw = bytes.fromhex("06 10 04 23 00 0e 04 01 17 03 03 00 01 00")
+        with pytest.raises(CouldNotParseKNXIP):
+            KNXIPFrame.from_knx(raw)

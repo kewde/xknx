@@ -38,3 +38,9 @@ class TestKNXIPDeviceConfigurationAck:
         raw = bytes((0x06, 0x10, 0x03, 0x11, 0x00, 0x0A, 0x04, 0x2A, 0x17))
         with pytest.raises(CouldNotParseKNXIP):
             KNXIPFrame.from_knx(raw)
+
+    def test_from_knx_unknown_status_code(self) -> None:
+        """Test parsing DeviceConfigurationAck with unknown status code raises CouldNotParseKNXIP."""
+        raw = bytes((0x06, 0x10, 0x03, 0x11, 0x00, 0x0A, 0x04, 0x2A, 0x17, 0x03))
+        with pytest.raises(CouldNotParseKNXIP):
+            KNXIPFrame.from_knx(raw)

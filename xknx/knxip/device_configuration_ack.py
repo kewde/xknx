@@ -38,7 +38,12 @@ class DeviceConfigurationAck(KNXIPBodyResponse):
             raise CouldNotParseKNXIP("DeviceConfigurationAck body has wrong length")
         self.communication_channel_id = raw[1]
         self.sequence_counter = raw[2]
-        self.status_code = ErrorCode(raw[3])
+        try:
+            self.status_code = ErrorCode(raw[3])
+        except ValueError:
+            raise CouldNotParseKNXIP(
+                "DeviceConfigurationAck body has invalid status code"
+            ) from None
         return DeviceConfigurationAck.BODY_LENGTH
 
     def to_knx(self) -> bytes:

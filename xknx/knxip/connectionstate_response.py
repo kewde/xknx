@@ -38,7 +38,12 @@ class ConnectionStateResponse(KNXIPBodyResponse):
         if len(raw) < ConnectionStateResponse.LENGTH:
             raise CouldNotParseKNXIP("ConnectionStateResponse info has wrong length")
         self.communication_channel_id = raw[0]
-        self.status_code = ErrorCode(raw[1])
+        try:
+            self.status_code = ErrorCode(raw[1])
+        except ValueError:
+            raise CouldNotParseKNXIP(
+                "ConnectionStateResponse body has invalid status code"
+            ) from None
         return ConnectionStateResponse.LENGTH
 
     def to_knx(self) -> bytes:

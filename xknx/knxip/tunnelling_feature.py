@@ -59,7 +59,12 @@ class _TunnellingFeature:
             raise CouldNotParseKNXIP("TunnellingFeature header has invalid length")
         self.communication_channel_id = raw[1]
         self.sequence_counter = raw[2]
-        self.status_code = ErrorCode(raw[3])
+        try:
+            self.status_code = ErrorCode(raw[3])
+        except ValueError:
+            raise CouldNotParseKNXIP(
+                "TunnellingFeature body has invalid status code"
+            ) from None
         self.feature_type = TunnellingFeatureType(raw[4])
         self.data = raw[6:]
         if self._has_data() and len(self.data) == 0:
@@ -186,7 +191,12 @@ class TunnellingFeatureResponse(_TunnellingFeature, KNXIPBodyResponse):
             raise CouldNotParseKNXIP("TunnellingFeature header has invalid length")
         self.communication_channel_id = raw[1]
         self.sequence_counter = raw[2]
-        self.status_code = ErrorCode(raw[3])
+        try:
+            self.status_code = ErrorCode(raw[3])
+        except ValueError:
+            raise CouldNotParseKNXIP(
+                "TunnellingFeature body has invalid status code"
+            ) from None
         self.feature_type = TunnellingFeatureType(raw[4])
         self.return_code = ReturnCode(raw[5])
         self.data = raw[6:]

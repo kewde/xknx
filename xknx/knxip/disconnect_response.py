@@ -38,7 +38,12 @@ class DisconnectResponse(KNXIPBodyResponse):
         if len(raw) < DisconnectResponse.LENGTH:
             raise CouldNotParseKNXIP("Disconnect info has wrong length")
         self.communication_channel_id = raw[0]
-        self.status_code = ErrorCode(raw[1])
+        try:
+            self.status_code = ErrorCode(raw[1])
+        except ValueError:
+            raise CouldNotParseKNXIP(
+                "DisconnectResponse body has invalid status code"
+            ) from None
         return DisconnectResponse.LENGTH
 
     def to_knx(self) -> bytes:
