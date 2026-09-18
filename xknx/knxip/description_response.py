@@ -10,6 +10,8 @@ by the KNXnet/IP Server in response to the KNXnet/IP Clients DESCRIPTION_REQUEST
 
 from __future__ import annotations
 
+from xknx.exceptions import CouldNotParseKNXIP
+
 from .body import KNXIPBody
 from .dib import DIB, DIBDeviceInformation
 from .knxip_enum import KNXIPServiceType
@@ -33,7 +35,10 @@ class DescriptionResponse(KNXIPBody):
         pos = 0
         while raw[pos:]:
             dib = DIB.determine_dib(raw[pos:])
-            pos += dib.from_knx(raw[pos:])
+            consumed = dib.from_knx(raw[pos:])
+            if consumed <= 0:
+                raise CouldNotParseKNXIP("DIB reported zero length")
+            pos += consumed
             self.dibs.append(dib)
         return pos
 

@@ -33,9 +33,39 @@ class TestKNXIPDIB:
 
     def test_dib_wrong_input(self) -> None:
         """Test parsing of wrong KNX/IP DIB packet."""
-        raw = (0x08, 0x01, 0xC0, 0xA8, 0x2A)
+        raw = bytes((0x08, 0x01, 0xC0, 0xA8, 0x2A))
         with pytest.raises(CouldNotParseKNXIP):
             DIBGeneric().from_knx(raw)
+
+    def test_dib_zero_length(self) -> None:
+        """
+        A DIB declaring length 0 shall raise, not return 0 bytes consumed.
+
+        A declared length below the 2-byte DIB header is nonsensical and would
+        let the caller's DIB loop advance by 0 bytes and spin forever. Every
+        lenient DIB implementation (DIBGeneric, DIBSuppSVCFamilies,
+        DIBSecuredServiceFamilies, DIBTunnelingInfo) shall reject it.
+        """
+        # DIBGeneric (type code 0x01).
+        with pytest.raises(CouldNotParseKNXIP):
+            DIBGeneric().from_knx(bytes((0x00, 0x01)))
+
+        # DIBSuppSVCFamilies (type code 0x02).
+        with pytest.raises(CouldNotParseKNXIP):
+            DIBSuppSVCFamilies().from_knx(bytes((0x00, 0x02)))
+
+        # DIBSecuredServiceFamilies (type code 0x06).
+        with pytest.raises(CouldNotParseKNXIP):
+            DIBSecuredServiceFamilies().from_knx(bytes((0x00, 0x06)))
+
+        # DIBTunnelingInfo (type code 0x07) with 4 bytes available so the
+        # >=4 availability check passes but the declared length is 0.
+        with pytest.raises(CouldNotParseKNXIP):
+            DIBTunnelingInfo().from_knx(bytes((0x00, 0x07, 0x00, 0xF8)))
+
+        # Declared length 1 (also below the 2-byte header) shall raise.
+        with pytest.raises(CouldNotParseKNXIP):
+            DIBGeneric().from_knx(bytes((0x01, 0x01)))
 
     def test_device_info(self) -> None:
         """Test parsing of device info."""

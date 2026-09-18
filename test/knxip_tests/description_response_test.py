@@ -1,5 +1,8 @@
 """Unit test for KNX/IP DescriptionResponse objects."""
 
+import pytest
+
+from xknx.exceptions import CouldNotParseKNXIP
 from xknx.knxip import (
     DescriptionResponse,
     DIBDeviceInformation,
@@ -56,3 +59,23 @@ class TestKNXIPDescriptionResponse:
         """Test device_name if no DIBDeviceInformation is present."""
         description_response = DescriptionResponse()
         assert description_response.device_name == "UNKNOWN"
+
+    def test_description_response_zero_length_dib(self) -> None:
+        """
+        Test a DIB declaring length 0 raises instead of hanging the parser.
+
+        A DIB header is itself two octets, so a declared length of 0x00 is
+        nonsensical; previously it made the DIB loop advance by 0 bytes and
+        spin forever (synchronously blocking the asyncio event loop). It
+        shall raise CouldNotParseKNXIP and terminate.
+        """
+        # DIB body of a single DIB whose declared length byte is 0x00 and whose
+        # type code 0x02 (SUPP_SVC_FAMILIES) routes to DIBSuppSVCFamilies.
+        with pytest.raises(CouldNotParseKNXIP):
+            DescriptionResponse().from_knx(bytes.fromhex("00 02"))
+
+        # End-to-end via the frame layer: valid 6-byte DESCRIPTION_RESPONSE
+        # header (total_length 8) wrapping the 2-byte malformed body "00 02".
+        raw = bytes.fromhex("06 10 02 04 00 08 00 02")
+        with pytest.raises(CouldNotParseKNXIP):
+            KNXIPFrame.from_knx(raw)

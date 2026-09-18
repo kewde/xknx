@@ -6,6 +6,10 @@ nav_order: 2
 
 # Changelog
 
+### Internals
+
+- Raise `CouldNotParseKNXIP` for DIBs declaring a length below their 2-byte header, preventing an infinite parse loop (and event-loop hang) on malformed DESCRIPTION_RESPONSE frames.
+
 # 3.15.0 Task improvements 2026-02-15
 
 ### Telegram
