@@ -90,7 +90,7 @@ class DIBGeneric(DIB):
             raise CouldNotParseKNXIP("could not parse DIB header")
 
         dib_length = raw[0]
-        if len(raw) < dib_length:
+        if dib_length < DIB_HEADER_LENGTH or len(raw) < dib_length:
             raise CouldNotParseKNXIP("DIB wrong length")
         try:
             self.dtc = DIBTypeCode(raw[1])
@@ -267,7 +267,7 @@ class _DIBServiceFamilies(DIB):
         if len(raw) < 2:
             raise CouldNotParseKNXIP("DIB header too small")
         length = raw[0]
-        if (len(raw) < length) or (length % 2):
+        if length < DIB_HEADER_LENGTH or len(raw) < length or length % 2:
             raise CouldNotParseKNXIP("DIB wrong size")
         if DIBTypeCode(raw[1]) != self.type_code:
             raise CouldNotParseKNXIP(
@@ -348,7 +348,7 @@ class DIBTunnelingInfo(DIB):
         if len(raw) < 4:
             raise CouldNotParseKNXIP("DIB header too small")
         length = raw[0]
-        if (len(raw) < length) or (length % 4):
+        if length < DIB_HEADER_LENGTH or len(raw) < length or length % 4:
             raise CouldNotParseKNXIP("DIB wrong size")
         if DIBTypeCode(raw[1]) != DIBTypeCode.TUNNELING_INFO:
             raise CouldNotParseKNXIP(
