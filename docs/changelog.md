@@ -6,6 +6,12 @@ nav_order: 2
 
 # Changelog
 
+# 3.15.1 Management disconnect fix 2026-09-18
+
+### Management
+
+- Fix peer `TDisconnect` during ACK-wait leaving the awaited ACK future pending, causing a ~6 s stall, a spurious retransmit, and an asyncio `Future exception was never retrieved` warning. The disconnect is now surfaced promptly as `ManagementConnectionRefused`.
+
 # 3.15.0 Task improvements 2026-02-15
 
 ### Telegram

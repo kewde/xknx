@@ -96,12 +96,6 @@ async def test_nm_individual_address_check_refused() -> None:
         tpci=tpci.TDataConnected(0),
         payload=apci.DeviceDescriptorRead(descriptor=0),
     )
-    ack = Telegram(
-        source_address=individual_address,
-        destination_address=IndividualAddress(0),
-        direction=TelegramDirection.INCOMING,
-        tpci=tpci.TAck(0),
-    )
     disconnect = Telegram(
         source_address=individual_address,
         destination_address=IndividualAddress(0),
@@ -117,7 +111,6 @@ async def test_nm_individual_address_check_refused() -> None:
         call(device_desc_read),
     ]
     xknx.management.process(disconnect)
-    xknx.management.process(ack)
     assert await task
 
 
