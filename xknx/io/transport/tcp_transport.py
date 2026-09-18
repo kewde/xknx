@@ -110,9 +110,9 @@ class TCPTransport(KNXIPTransport):
                 knxipframe,
             )
             self.handle_knxipframe(knxipframe, self.remote_hpai)
-        # parse data after current KNX/IP frame
-        if next_frame_part:
-            self.data_received_callback(next_frame_part)
+            # parse data after current KNX/IP frame
+            if next_frame_part:
+                self.data_received_callback(next_frame_part)
 
     async def connect(self) -> None:
         """Connect TCP socket."""
