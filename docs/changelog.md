@@ -6,6 +6,12 @@ nav_order: 2
 
 # Changelog
 
+# Unreleased
+
+### Connection
+
+- KNX/IP: Raise `CouldNotParseKNXIP` for unknown status codes in body parsers instead of an uncaught `ValueError`.
+
 # 3.15.0 Task improvements 2026-02-15
 
 ### Telegram

@@ -32,3 +32,9 @@ class TestKNXIPConnectionStateResponse:
         raw = bytes((0x06, 0x10, 0x02, 0x08, 0x00, 0x08, 0x15))
         with pytest.raises(CouldNotParseKNXIP):
             KNXIPFrame.from_knx(raw)
+
+    def test_from_knx_unknown_status_code(self) -> None:
+        """Test parsing ConnectionStateResponse with unknown status code raises CouldNotParseKNXIP."""
+        raw = bytes((0x06, 0x10, 0x02, 0x08, 0x00, 0x08, 0x15, 0x03))
+        with pytest.raises(CouldNotParseKNXIP):
+            KNXIPFrame.from_knx(raw)
