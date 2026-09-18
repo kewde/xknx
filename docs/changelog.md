@@ -6,6 +6,12 @@ nav_order: 2
 
 # Changelog
 
+# Unreleased
+
+### Bugfixes
+
+- Fix parsing of malformed `SearchRequestExtended` frames. Fall-through Search Request Parameters (`INVALID`, `SELECT_BY_PROGRAMMING_MODE`) carrying extra payload, and unknown SRP type codes, are now rejected with `CouldNotParseKNXIP` instead of silently fabricating phantom SRPs or raising an uncaught `ValueError`.
+
 # 3.15.0 Task improvements 2026-02-15
 
 ### Telegram

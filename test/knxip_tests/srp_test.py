@@ -53,6 +53,33 @@ class TestKNXIPSRP:
         with pytest.raises(CouldNotParseKNXIP):
             SRP.from_knx(bytes.fromhex("08"))
 
+    def test_size_below_header_raises(self) -> None:
+        """Test from_knx rejects a wire size smaller than the SRP header."""
+        for size in (0x00, 0x01):
+            with pytest.raises(CouldNotParseKNXIP):
+                SRP.from_knx(bytes([size, 0x81]))
+
+    def test_unknown_type_raises_could_not_parse(self) -> None:
+        """Test from_knx raises CouldNotParseKNXIP (not ValueError) for unknown type."""
+        with pytest.raises(CouldNotParseKNXIP):
+            SRP.from_knx(bytes.fromhex("02 7f"))
+
+    def test_fall_through_extra_payload_raises(self) -> None:
+        """Test fall-through SRP types reject extra payload (no phantom bytes)."""
+        # SELECT_BY_PROGRAMMING_MODE with wire size 4 carrying 2 extra bytes
+        with pytest.raises(CouldNotParseKNXIP):
+            SRP.from_knx(bytes.fromhex("04 81 02 81"))
+        # INVALID with wire size 4 carrying 2 extra bytes
+        with pytest.raises(CouldNotParseKNXIP):
+            SRP.from_knx(bytes.fromhex("04 80 02 81"))
+
+    def test_fall_through_empty_parses(self) -> None:
+        """Test fall-through SRP types still parse when no payload is present."""
+        assert SRP.from_knx(bytes.fromhex("02 81")) == SRP.with_programming_mode()
+        assert SRP.from_knx(bytes.fromhex("02 80")) == SRP(
+            SearchRequestParameterType.INVALID, mandatory=True
+        )
+
     @pytest.mark.parametrize(
         ("srp", "expected_bytes"),
         [
