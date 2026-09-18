@@ -38,3 +38,10 @@ class TestKNXIPDeviceConfigurationAck:
         raw = bytes((0x06, 0x10, 0x03, 0x11, 0x00, 0x0A, 0x04, 0x2A, 0x17))
         with pytest.raises(CouldNotParseKNXIP):
             KNXIPFrame.from_knx(raw)
+
+    def test_from_knx_empty_body_raises_could_not_parse(self) -> None:
+        """Test header-only frame (total_length == 6) raises CouldNotParseKNXIP."""
+        # 06 10 03 11 00 06: valid 6-byte header, total_length=6, empty body
+        raw = bytes.fromhex("061003110006")
+        with pytest.raises(CouldNotParseKNXIP):
+            KNXIPFrame.from_knx(raw)

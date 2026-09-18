@@ -130,3 +130,17 @@ class TestKNXIPTunnellingFeature:
         raw = bytes.fromhex("06 10 04 24 00 0c 04 01 17 00 03 00")
         with pytest.raises(CouldNotParseKNXIP):
             KNXIPFrame.from_knx(raw)
+
+    def test_from_knx_empty_body_raises_could_not_parse(self) -> None:
+        """Test header-only frame (total_length == 6) raises CouldNotParseKNXIP."""
+        # 06 10 04 22 00 06: GET service, valid 6-byte header, empty body
+        raw = bytes.fromhex("061004220006")
+        with pytest.raises(CouldNotParseKNXIP):
+            KNXIPFrame.from_knx(raw)
+
+    def test_from_knx_empty_body_response_raises_could_not_parse(self) -> None:
+        """Test header-only FEATURE_RESPONSE raises CouldNotParseKNXIP."""
+        # 06 10 04 23 00 06: FEATURE_RESPONSE, valid 6-byte header, empty body
+        raw = bytes.fromhex("061004230006")
+        with pytest.raises(CouldNotParseKNXIP):
+            KNXIPFrame.from_knx(raw)

@@ -55,6 +55,11 @@ class _TunnellingFeature:
 
     def from_knx(self, raw: bytes) -> int:
         """Parse/deserialize from KNX/IP raw data."""
+        if (
+            len(raw)
+            < _TunnellingFeature.HEADER_LENGTH + _TunnellingFeature.FEATURE_ID_LENGTH
+        ):
+            raise CouldNotParseKNXIP("TunnellingFeature body has wrong length")
         if raw[0] != _TunnellingFeature.HEADER_LENGTH:  # structure_length field
             raise CouldNotParseKNXIP("TunnellingFeature header has invalid length")
         self.communication_channel_id = raw[1]
@@ -182,6 +187,11 @@ class TunnellingFeatureResponse(_TunnellingFeature, KNXIPBodyResponse):
 
     def from_knx(self, raw: bytes) -> int:
         """Parse/deserialize from KNX/IP raw data."""
+        if (
+            len(raw)
+            < _TunnellingFeature.HEADER_LENGTH + _TunnellingFeature.FEATURE_ID_LENGTH
+        ):
+            raise CouldNotParseKNXIP("TunnellingFeature body has wrong length")
         if raw[0] != _TunnellingFeature.HEADER_LENGTH:  # structure_length field
             raise CouldNotParseKNXIP("TunnellingFeature header has invalid length")
         self.communication_channel_id = raw[1]

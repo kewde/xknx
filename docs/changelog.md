@@ -6,6 +6,12 @@ nav_order: 2
 
 # Changelog
 
+# Unreleased changes
+
+### Internals
+
+- Raise `CouldNotParseKNXIP` instead of an unhandled `IndexError` when parsing KNX/IP frames with empty body (DeviceConfigurationRequest/Ack, TunnellingRequest/Ack/Feature, RoutingBusy, RoutingLostMessage).
+
 # 3.15.0 Task improvements 2026-02-15
 
 ### Telegram
