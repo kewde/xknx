@@ -189,12 +189,33 @@ class ClimateMode(Device):
         yield self.remote_value_operation_mode_protection
         yield self.remote_value_operation_mode_standby
 
+    def _iter_binary_operation_mode_remote_values(
+        self,
+    ) -> Iterator[RemoteValueBinaryOperationMode]:
+        """Iterate binary (DPT 1) operation mode RemoteValues."""
+        yield self.remote_value_operation_mode_comfort
+        yield self.remote_value_operation_mode_standby
+        yield self.remote_value_operation_mode_economy
+        yield self.remote_value_operation_mode_protection
+
     def _set_internal_operation_mode(
         self, operation_mode: HVACOperationMode | None
     ) -> None:
         """Set internal value of operation mode. Call hooks if operation mode was changed."""
         if operation_mode is not None and operation_mode != self.operation_mode:
             self.operation_mode = operation_mode
+            self.after_update()
+            return
+        # all binary operation modes off -> Standby
+        if (
+            operation_mode is None
+            and self.operation_mode != HVACOperationMode.STANDBY
+            and all(
+                not rv.initialized or rv.value is None
+                for rv in self._iter_binary_operation_mode_remote_values()
+            )
+        ):
+            self.operation_mode = HVACOperationMode.STANDBY
             self.after_update()
 
     def _set_internal_controller_mode(

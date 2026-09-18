@@ -1198,6 +1198,169 @@ class TestClimate:
             climate_mode.process(telegram)
             assert climate_mode.controller_mode == controller_mode
 
+    def test_process_binary_operation_mode(self) -> None:
+        """
+        Test processing binary operation mode telegrams.
+
+        Setting a binary operation mode bit sets the matching mode; clearing the
+        last active bit reverts to Standby (all binary operation modes off ->
+        Standby according to MDT heating actuators).
+        """
+        xknx = XKNX()
+        climate_mode = ClimateMode(
+            xknx,
+            "TestClimate",
+            group_address_operation_mode_protection="1/2/5",
+            group_address_operation_mode_economy="1/2/6",
+            group_address_operation_mode_comfort="1/2/7",
+        )
+        # No binary mode bit received yet -> Standby (initial state)
+        assert climate_mode.operation_mode == HVACOperationMode.STANDBY
+
+        # Comfort bit True -> COMFORT
+        climate_mode.process(
+            Telegram(
+                destination_address=GroupAddress("1/2/7"),
+                payload=GroupValueWrite(DPTBinary(True)),
+            )
+        )
+        assert climate_mode.operation_mode == HVACOperationMode.COMFORT
+        # Clearing the active Comfort bit -> all bits off -> Standby
+        climate_mode.process(
+            Telegram(
+                destination_address=GroupAddress("1/2/7"),
+                payload=GroupValueWrite(DPTBinary(False)),
+            )
+        )
+        assert climate_mode.operation_mode == HVACOperationMode.STANDBY
+
+        # Economy bit True -> ECONOMY
+        climate_mode.process(
+            Telegram(
+                destination_address=GroupAddress("1/2/6"),
+                payload=GroupValueWrite(DPTBinary(True)),
+            )
+        )
+        assert climate_mode.operation_mode == HVACOperationMode.ECONOMY
+        # Clearing the active Economy bit -> all bits off -> Standby
+        climate_mode.process(
+            Telegram(
+                destination_address=GroupAddress("1/2/6"),
+                payload=GroupValueWrite(DPTBinary(False)),
+            )
+        )
+        assert climate_mode.operation_mode == HVACOperationMode.STANDBY
+
+        # Protection bit True -> BUILDING_PROTECTION
+        climate_mode.process(
+            Telegram(
+                destination_address=GroupAddress("1/2/5"),
+                payload=GroupValueWrite(DPTBinary(True)),
+            )
+        )
+        assert climate_mode.operation_mode == HVACOperationMode.BUILDING_PROTECTION
+        # Clearing the active Protection bit -> all bits off -> Standby
+        climate_mode.process(
+            Telegram(
+                destination_address=GroupAddress("1/2/5"),
+                payload=GroupValueWrite(DPTBinary(False)),
+            )
+        )
+        assert climate_mode.operation_mode == HVACOperationMode.STANDBY
+
+        # Process unused group address -> no reaction
+        climate_mode.process(
+            Telegram(
+                destination_address=GroupAddress("0/0/1"),
+                payload=GroupValueWrite(DPTBinary(True)),
+            )
+        )
+        assert climate_mode.operation_mode == HVACOperationMode.STANDBY
+
+    def test_process_binary_operation_mode_keep_active_mode(self) -> None:
+        """Test clearing a binary mode bit keeps the active mode if another bit is still on."""
+        xknx = XKNX()
+        climate_mode = ClimateMode(
+            xknx,
+            "TestClimate",
+            group_address_operation_mode_comfort="1/2/7",
+            group_address_operation_mode_economy="1/2/6",
+        )
+        # Comfort True -> COMFORT
+        climate_mode.process(
+            Telegram(
+                destination_address=GroupAddress("1/2/7"),
+                payload=GroupValueWrite(DPTBinary(True)),
+            )
+        )
+        assert climate_mode.operation_mode == HVACOperationMode.COMFORT
+        # Economy True ( Comfort still on ) -> ECONOMY
+        climate_mode.process(
+            Telegram(
+                destination_address=GroupAddress("1/2/6"),
+                payload=GroupValueWrite(DPTBinary(True)),
+            )
+        )
+        assert climate_mode.operation_mode == HVACOperationMode.ECONOMY
+        # Clearing Comfort (Economy still on ) -> stays ECONOMY (not all off)
+        climate_mode.process(
+            Telegram(
+                destination_address=GroupAddress("1/2/7"),
+                payload=GroupValueWrite(DPTBinary(False)),
+            )
+        )
+        assert climate_mode.operation_mode == HVACOperationMode.ECONOMY
+        # Clearing the last active bit (Economy) -> all bits off -> Standby
+        climate_mode.process(
+            Telegram(
+                destination_address=GroupAddress("1/2/6"),
+                payload=GroupValueWrite(DPTBinary(False)),
+            )
+        )
+        assert climate_mode.operation_mode == HVACOperationMode.STANDBY
+
+    def test_process_binary_operation_mode_with_standby_bit(self) -> None:
+        """Test binary operation mode with a dedicated Standby bit configured."""
+        xknx = XKNX()
+        climate_mode = ClimateMode(
+            xknx,
+            "TestClimate",
+            group_address_operation_mode_comfort="1/2/7",
+            group_address_operation_mode_standby="1/2/9",
+        )
+        # Comfort True -> COMFORT
+        climate_mode.process(
+            Telegram(
+                destination_address=GroupAddress("1/2/7"),
+                payload=GroupValueWrite(DPTBinary(True)),
+            )
+        )
+        assert climate_mode.operation_mode == HVACOperationMode.COMFORT
+        # Standby bit True -> STANDBY
+        climate_mode.process(
+            Telegram(
+                destination_address=GroupAddress("1/2/9"),
+                payload=GroupValueWrite(DPTBinary(True)),
+            )
+        )
+        assert climate_mode.operation_mode == HVACOperationMode.STANDBY
+        # Clearing Comfort (Standby bit still on) -> stays Standby (standby bit not None)
+        climate_mode.process(
+            Telegram(
+                destination_address=GroupAddress("1/2/7"),
+                payload=GroupValueWrite(DPTBinary(False)),
+            )
+        )
+        assert climate_mode.operation_mode == HVACOperationMode.STANDBY
+        # Clearing Standby bit -> all bits off -> stays Standby (no redundant update)
+        climate_mode.process(
+            Telegram(
+                destination_address=GroupAddress("1/2/9"),
+                payload=GroupValueWrite(DPTBinary(False)),
+            )
+        )
+        assert climate_mode.operation_mode == HVACOperationMode.STANDBY
+
     async def test_process_controller_status_wrong_payload(self) -> None:
         """Test process wrong telegram for controller status (wrong payload type)."""
         xknx = XKNX()

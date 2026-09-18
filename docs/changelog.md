@@ -6,6 +6,12 @@ nav_order: 2
 
 # Changelog
 
+# Unreleased
+
+### Devices
+
+- ClimateMode: Revert `operation_mode` to `Standby` when all binary operation mode bits are cleared on the bus.
+
 # 3.15.0 Task improvements 2026-02-15
 
 ### Telegram
