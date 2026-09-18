@@ -144,7 +144,11 @@ class ExposeSensor(Device):
         """Process incoming GROUP READ telegram."""
         if not self.respond_to_read:
             return
-        if self._payload_after_cooldown is not None:
+        if (
+            self._cooldown_task is not None
+            and not self._cooldown_task.done()
+            and self._payload_after_cooldown is not None
+        ):
             # reading shall not be affected by cooldown, but restart the timer
             self.sensor_value.send_raw(self._payload_after_cooldown, response=True)
             self._restart_cooldown()

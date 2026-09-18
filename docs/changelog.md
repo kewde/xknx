@@ -6,6 +6,12 @@ nav_order: 2
 
 # Changelog
 
+# 3.15.1 ExposeSensor read fix 2026-09-18
+
+### Devices
+
+- ExposeSensor: Fix `GroupValueRead` responses returning a stale value after an incoming `GroupValueWrite` from another bus participant updated the group value. Reads now answer with the current value unless a `cooldown` is actively pending.
+
 # 3.15.0 Task improvements 2026-02-15
 
 ### Telegram
