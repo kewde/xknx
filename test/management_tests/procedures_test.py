@@ -121,6 +121,161 @@ async def test_nm_individual_address_check_refused() -> None:
     assert await task
 
 
+async def test_nm_individual_address_check_tnak() -> None:
+    """
+    Test nm_individual_address_check returns True when the device NAKs the data frame.
+
+    A device that sends a NAK in response to DeviceDescriptorRead is present at the
+    address but non-cooperative - the address is occupied.
+    """
+    xknx = XKNX()
+    xknx.cemi_handler = AsyncMock()
+    individual_address = IndividualAddress("4.0.10")
+
+    connect = Telegram(destination_address=individual_address, tpci=tpci.TConnect())
+    device_desc_read = Telegram(
+        destination_address=individual_address,
+        tpci=tpci.TDataConnected(0),
+        payload=apci.DeviceDescriptorRead(descriptor=0),
+    )
+    nak = Telegram(
+        source_address=individual_address,
+        destination_address=IndividualAddress(0),
+        direction=TelegramDirection.INCOMING,
+        tpci=tpci.TNak(0),
+    )
+    disconnect = Telegram(
+        destination_address=individual_address,
+        tpci=tpci.TDisconnect(),
+    )
+    task = asyncio.create_task(
+        procedures.nm_individual_address_check(xknx, individual_address)
+    )
+    await asyncio.sleep(0)
+    assert xknx.cemi_handler.send_telegram.call_args_list == [
+        call(connect),
+        call(device_desc_read),
+    ]
+    # device is present (it sent the NAK) -> address is occupied
+    xknx.management.process(nak)
+    assert await task is True
+    # connection is cleaned up
+    assert xknx.cemi_handler.send_telegram.call_args_list == [
+        call(connect),
+        call(device_desc_read),
+        call(disconnect),
+    ]
+
+
+async def test_nm_individual_address_check_ack_sequence_mismatch() -> None:
+    """
+    Test nm_individual_address_check returns True when the ACK sequence number mismatches.
+
+    A device that sends an ACK with a wrong sequence number is present at the address
+    but non-cooperative - the address is occupied.
+    """
+    xknx = XKNX()
+    xknx.cemi_handler = AsyncMock()
+    individual_address = IndividualAddress("4.0.10")
+
+    connect = Telegram(destination_address=individual_address, tpci=tpci.TConnect())
+    device_desc_read = Telegram(
+        destination_address=individual_address,
+        tpci=tpci.TDataConnected(0),
+        payload=apci.DeviceDescriptorRead(descriptor=0),
+    )
+    # ACK with a sequence number not matching the request (0)
+    ack_wrong_seq = Telegram(
+        source_address=individual_address,
+        destination_address=IndividualAddress(0),
+        direction=TelegramDirection.INCOMING,
+        tpci=tpci.TAck(1),
+    )
+    disconnect = Telegram(
+        destination_address=individual_address,
+        tpci=tpci.TDisconnect(),
+    )
+    task = asyncio.create_task(
+        procedures.nm_individual_address_check(xknx, individual_address)
+    )
+    await asyncio.sleep(0)
+    assert xknx.cemi_handler.send_telegram.call_args_list == [
+        call(connect),
+        call(device_desc_read),
+    ]
+    # device is present (it sent an ACK) -> address is occupied
+    xknx.management.process(ack_wrong_seq)
+    assert await task is True
+    # connection is cleaned up
+    assert xknx.cemi_handler.send_telegram.call_args_list == [
+        call(connect),
+        call(device_desc_read),
+        call(disconnect),
+    ]
+
+
+async def test_nm_individual_address_check_unexpected_apci() -> None:
+    """
+    Test nm_individual_address_check returns True when the device responds with an unexpected APCI.
+
+    A device that responds with a non-matching APCI is present at the address but
+    non-cooperative - the address is occupied.
+    """
+    xknx = XKNX()
+    xknx.cemi_handler = AsyncMock()
+    individual_address = IndividualAddress("4.0.10")
+
+    connect = Telegram(destination_address=individual_address, tpci=tpci.TConnect())
+    device_desc_read = Telegram(
+        destination_address=individual_address,
+        tpci=tpci.TDataConnected(0),
+        payload=apci.DeviceDescriptorRead(descriptor=0),
+    )
+    ack = Telegram(
+        source_address=individual_address,
+        destination_address=IndividualAddress(0),
+        direction=TelegramDirection.INCOMING,
+        tpci=tpci.TAck(0),
+    )
+    # device responds with a non-matching APCI instead of DeviceDescriptorResponse
+    unexpected_response = Telegram(
+        source_address=individual_address,
+        destination_address=IndividualAddress(0),
+        direction=TelegramDirection.INCOMING,
+        tpci=tpci.TDataConnected(0),
+        payload=apci.FunctionPropertyCommand(),
+    )
+    ack_out = Telegram(
+        destination_address=individual_address,
+        source_address=IndividualAddress(0),
+        direction=TelegramDirection.OUTGOING,
+        tpci=tpci.TAck(0),
+    )
+    disconnect = Telegram(
+        destination_address=individual_address,
+        tpci=tpci.TDisconnect(),
+    )
+    task = asyncio.create_task(
+        procedures.nm_individual_address_check(xknx, individual_address)
+    )
+    await asyncio.sleep(0)
+    assert xknx.cemi_handler.send_telegram.call_args_list == [
+        call(connect),
+        call(device_desc_read),
+    ]
+    # device is present (it sent a response, albeit an unexpected one) -> occupied
+    xknx.management.process(ack)
+    xknx.management.process(unexpected_response)
+    assert await task is True
+    # connection is cleaned up (auto-ack is sent for the incoming TDataConnected)
+    assert xknx.cemi_handler.send_telegram.call_args_list == [
+        call(connect),
+        call(device_desc_read),
+        call(ack_out),
+        call(disconnect),
+    ]
+
+
 async def test_nm_individual_address_read(time_travel: EventLoopClockAdvancer) -> None:
     """Test nm_individual_address_read."""
     _timeout = 2

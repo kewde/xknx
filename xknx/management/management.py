@@ -351,11 +351,11 @@ class P2PConnection:
             self._ack_waiter = None
 
         if isinstance(ack, TNak):
-            raise ManagementConnectionError(
+            raise ManagementConnectionRefused(
                 f"Received no_ack from sending Telegram: {telegram}"
             )
         if ack.sequence_number != seq_num:
-            raise ManagementConnectionError(
+            raise ManagementConnectionRefused(
                 f"Ack sequence number {ack.sequence_number} does not match request sequence number of {telegram}"
             )
 
@@ -373,7 +373,7 @@ class P2PConnection:
             self._response_waiter = asyncio.get_event_loop().create_future()
 
         if expected_payload and not isinstance(telegram.payload, expected_payload):
-            raise ManagementConnectionError(
+            raise ManagementConnectionRefused(
                 f"Received unexpected telegram: {telegram.payload}"
             )
         return telegram
