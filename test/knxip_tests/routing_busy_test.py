@@ -39,3 +39,10 @@ class TestKNXIPRoutingBusy:
         raw = bytes((0x06, 0x10, 0x05, 0x32, 0x00, 0x0C, 0x06, 0x00, 0x00, 0x64, 0x00))
         with pytest.raises(CouldNotParseKNXIP):
             KNXIPFrame.from_knx(raw)
+
+    def test_from_knx_empty_body_raises_could_not_parse(self) -> None:
+        """Test header-only frame (total_length == 6) raises CouldNotParseKNXIP."""
+        # 06 10 05 32 00 06: valid 6-byte header, total_length=6, empty body
+        raw = bytes.fromhex("061005320006")
+        with pytest.raises(CouldNotParseKNXIP):
+            KNXIPFrame.from_knx(raw)
