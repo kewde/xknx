@@ -6,6 +6,12 @@ nav_order: 2
 
 # Changelog
 
+# Unreleased
+
+### Bugfixes
+
+- Don't drop the TCP tunneling connection on a malformed or unsupported KNX/IP frame; resume parsing any pipelined frames after the unparsable one using the KNX/IP header `total_length`.
+
 # 3.15.0 Task improvements 2026-02-15
 
 ### Telegram

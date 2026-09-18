@@ -11,7 +11,7 @@ from collections.abc import Callable
 import logging
 
 from xknx.exceptions import CommunicationError, CouldNotParseKNXIP, IncompleteKNXIPFrame
-from xknx.knxip import HPAI, HostProtocol, KNXIPFrame
+from xknx.knxip import HPAI, HostProtocol, KNXIPFrame, KNXIPHeader
 
 from .ip_transport import KNXIPTransport
 
@@ -103,13 +103,20 @@ class TCPTransport(KNXIPTransport):
                 couldnotparseknxip.description,
                 raw.hex(),
             )
-        else:
-            knx_logger.debug(
-                "Received from %s: %s",
-                self.remote_hpai,
-                knxipframe,
-            )
-            self.handle_knxipframe(knxipframe, self.remote_hpai)
+            header = KNXIPHeader()
+            try:
+                header.from_knx(raw)
+            except CouldNotParseKNXIP:
+                pass
+            if header.total_length and len(raw) > header.total_length:
+                self.data_received_callback(raw[header.total_length :])
+            return
+        knx_logger.debug(
+            "Received from %s: %s",
+            self.remote_hpai,
+            knxipframe,
+        )
+        self.handle_knxipframe(knxipframe, self.remote_hpai)
         # parse data after current KNX/IP frame
         if next_frame_part:
             self.data_received_callback(next_frame_part)
