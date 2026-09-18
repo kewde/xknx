@@ -6,6 +6,12 @@ nav_order: 2
 
 # Changelog
 
+# Unreleased
+
+### Routing
+
+- Fix routing flow control busy counter ratcheting upward when a `RoutingBusy` frame arrives during the fade-out (slowduration/decrement) phase. The blocking throttle pause no longer accumulates without bound across consecutive busy waves.
+
 # 3.15.0 Task improvements 2026-02-15
 
 ### Telegram
