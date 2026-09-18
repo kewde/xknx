@@ -6,6 +6,12 @@ nav_order: 2
 
 # Changelog
 
+# Unreleased
+
+### Bugfixes
+
+- Raise `InvalidSecureConfiguration` instead of crashing with a `ValueError` when loading a `.knxkeys` file whose signature verification would require encoding an attribute value longer than 255 UTF-8 bytes (the single-byte length prefix used by the ETS signature algorithm cannot represent it).
+
 # 3.15.0 Task improvements 2026-02-15
 
 ### Telegram

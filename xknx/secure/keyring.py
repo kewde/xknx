@@ -534,6 +534,12 @@ class KeyringSAXContentHandler(ContentHandler):
         if isinstance(value, str):
             value = value.encode("utf-8")
 
+        if len(value) > 255:
+            raise InvalidSecureConfiguration(
+                f"Invalid keyring file: attribute value of {len(value)} bytes "
+                "exceeds the 255-byte length supported by signature verification."
+            )
+
         self.output.append(len(value))
         self.output.extend(value)
 
