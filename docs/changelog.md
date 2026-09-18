@@ -6,6 +6,12 @@ nav_order: 2
 
 # Changelog
 
+# Unreleased
+
+### Management
+
+- `nm_individual_address_check` now returns `True` (address occupied) when the device responds with a `TNak`, an ACK with a mismatching sequence number, or an unexpected APCI, instead of raising `ManagementConnectionError`. These device-present-but-non-cooperative responses are now treated like the existing `TDisconnect` case.
+
 # 3.15.0 Task improvements 2026-02-15
 
 ### Telegram
