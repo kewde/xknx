@@ -6,6 +6,12 @@ nav_order: 2
 
 # Changelog
 
+# Unreleased
+
+### Internals
+
+- Don't skip device processing of incoming telegrams when a `telegram_received_cb` `AddressFilter` raises (e.g. filter level count incompatible with `address_format`); the exception is now logged per callback instead of propagating.
+
 # 3.15.0 Task improvements 2026-02-15
 
 ### Telegram

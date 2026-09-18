@@ -238,9 +238,9 @@ class TelegramQueue:
     def _run_telegram_received_cbs(self, telegram: Telegram) -> None:
         """Run registered callbacks. Don't propagate exceptions."""
         for callback in self.telegram_received_cbs:
-            if not callback.is_within_filter(telegram):
-                continue
             try:
+                if not callback.is_within_filter(telegram):
+                    continue
                 callback.callback(telegram)
             except Exception:  # pylint: disable=broad-except
                 logger.exception(

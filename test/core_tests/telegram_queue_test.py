@@ -9,7 +9,12 @@ from xknx import XKNX
 from xknx.dpt import DPTArray, DPTBinary
 from xknx.exceptions import CommunicationError, CouldNotParseTelegram
 from xknx.telegram import AddressFilter, Telegram, TelegramDirection
-from xknx.telegram.address import GroupAddress, IndividualAddress, InternalGroupAddress
+from xknx.telegram.address import (
+    GroupAddress,
+    GroupAddressType,
+    IndividualAddress,
+    InternalGroupAddress,
+)
 from xknx.telegram.apci import GroupValueWrite
 
 
@@ -472,6 +477,62 @@ class TestTelegramQueue:
             "Unexpected error while processing telegram_received_cb for %s",
             telegram,
         )
+
+    async def test_callback_filter_raising_does_not_skip_devices(self) -> None:
+        """Test exception from AddressFilter.match doesn't skip devices.process."""
+        xknx = XKNX()
+        bad_callback = Mock()
+        xknx.telegram_queue.register_telegram_received_cb(
+            bad_callback, address_filters=[AddressFilter("1/2/3")]
+        )
+
+        telegram = Telegram(
+            destination_address=GroupAddress("1/2/3"),
+            direction=TelegramDirection.INCOMING,
+            payload=GroupValueWrite(DPTBinary(1)),
+        )
+
+        with (
+            patch.object(GroupAddress, "address_format", GroupAddressType.SHORT),
+            patch("xknx.devices.Devices.process") as devices_process_mock,
+            patch("logging.Logger.exception") as logging_exception_mock,
+        ):
+            await xknx.telegram_queue.process_telegram_incoming(telegram)
+
+        bad_callback.assert_not_called()
+        devices_process_mock.assert_called_once_with(telegram)
+        logging_exception_mock.assert_called_once_with(
+            "Unexpected error while processing telegram_received_cb for %s",
+            telegram,
+        )
+
+    async def test_callback_filter_raising_does_not_skip_other_callbacks(self) -> None:
+        """Test a filter raising for one callback doesn't skip following callbacks."""
+        xknx = XKNX()
+        bad_callback = Mock()
+        good_callback = Mock()
+
+        xknx.telegram_queue.register_telegram_received_cb(
+            bad_callback, address_filters=[AddressFilter("1/2/3")]
+        )
+        xknx.telegram_queue.register_telegram_received_cb(good_callback)
+
+        telegram = Telegram(
+            destination_address=GroupAddress("1/2/3"),
+            direction=TelegramDirection.INCOMING,
+            payload=GroupValueWrite(DPTBinary(1)),
+        )
+
+        with (
+            patch.object(GroupAddress, "address_format", GroupAddressType.SHORT),
+            patch("xknx.devices.Devices.process") as devices_process_mock,
+            patch("logging.Logger.exception"),
+        ):
+            await xknx.telegram_queue.process_telegram_incoming(telegram)
+
+        bad_callback.assert_not_called()
+        good_callback.assert_called_once_with(telegram)
+        devices_process_mock.assert_called_once_with(telegram)
 
     @pytest.mark.parametrize(
         ("raw_cemi_data_secure", "should_callback_called"),
