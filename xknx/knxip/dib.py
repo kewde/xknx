@@ -52,7 +52,11 @@ class DIB(ABC):
         """Determine dib type out of dib type code."""
         if len(raw) < 2:
             raise CouldNotParseKNXIP("could not parse DIB header")
-        dtc = DIBTypeCode(raw[1])
+        try:
+            dtc = DIBTypeCode(raw[1])
+        except ValueError:
+            # unknown (reserved / vendor / future) type code -> generic catch-all
+            return DIBGeneric()
 
         if dtc == DIBTypeCode.DEVICE_INFO:
             return DIBDeviceInformation()
