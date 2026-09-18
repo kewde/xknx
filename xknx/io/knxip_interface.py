@@ -188,6 +188,8 @@ class KNXIPInterface:
                     )
                 elif gateway.supports_routing and not gateway.routing_requires_secure:
                     await self._start_routing(local_ip=local_ip)
+                elif gateway.supports_routing and gateway.routing_requires_secure:
+                    await self._start_secure_routing(local_ip=local_ip, keyring=keyring)
             except CommunicationError as ex:
                 logger.debug("Skipping %s. Could not connect: %s", gateway, ex)
                 continue

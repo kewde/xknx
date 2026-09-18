@@ -19,6 +19,11 @@ from xknx.io import (
 )
 from xknx.io.routing import Routing, SecureGroup, SecureRouting
 from xknx.io.tunnel import SecureTunnel, TCPTunnel, UDPTunnel
+from xknx.knxip import (
+    DIBSecuredServiceFamilies,
+    DIBServiceFamily,
+    DIBSuppSVCFamilies,
+)
 from xknx.knxip.dib import TunnelingSlotStatus
 from xknx.secure import load_keyring
 from xknx.telegram import IndividualAddress
@@ -703,3 +708,89 @@ class TestKNXIPInterface:
                 interface._interface.cemi_received_callback == interface.cemi_received
             )
             connect_secure.assert_called_once_with()
+
+    @staticmethod
+    def _secure_routing_only_descriptor() -> GatewayDescriptor:
+        """Build a gateway descriptor advertising secure routing only (no tunnelling)."""
+        gateway = GatewayDescriptor(ip_addr="10.1.2.3", port=3671)
+        supp_svc_families = DIBSuppSVCFamilies()
+        supp_svc_families.families = [
+            DIBSuppSVCFamilies.Family(DIBServiceFamily.CORE, 1),
+            DIBSuppSVCFamilies.Family(DIBServiceFamily.ROUTING, 1),
+            DIBSuppSVCFamilies.Family(DIBServiceFamily.SECURITY, 1),
+        ]
+        secured_svc_families = DIBSecuredServiceFamilies()
+        secured_svc_families.families = [
+            DIBSecuredServiceFamilies.Family(DIBServiceFamily.ROUTING, 1),
+            # No TUNNELING entry -> tunnelling_requires_secure is False (not None).
+        ]
+        gateway.parse_dibs([supp_svc_families, secured_svc_families])
+        # Resulting state (sanity-checked by the tests below):
+        #   supports_routing=True, supports_secure=True,
+        #   supports_tunnelling=False, supports_tunnelling_tcp=False,
+        #   routing_requires_secure=True, tunnelling_requires_secure=False
+        return gateway
+
+    async def test_start_automatic_secure_routing_only(self) -> None:
+        """Test automatic mode dispatches secure routing for secure-routing-only gateways."""
+        descriptor = self._secure_routing_only_descriptor()
+
+        async def gateway_generator_mock(_: Any) -> AsyncGenerator[GatewayDescriptor]:
+            yield descriptor
+
+        connection_config = ConnectionConfig()
+        assert connection_config.connection_type == ConnectionType.AUTOMATIC
+        interface = knx_interface_factory(self.xknx, connection_config)
+
+        with (
+            patch(
+                "xknx.io.knxip_interface.GatewayScanner.async_scan",
+                new=gateway_generator_mock,
+            ),
+            patch(
+                "xknx.io.KNXIPInterface._start_secure_routing"
+            ) as start_secure_routing_mock,
+            patch(
+                "xknx.io.KNXIPInterface._start_secure_tunnelling_tcp"
+            ) as start_secure_tunnelling_tcp_mock,
+            patch(
+                "xknx.io.KNXIPInterface._start_tunnelling_tcp"
+            ) as start_tunnelling_tcp_mock,
+            patch(
+                "xknx.io.KNXIPInterface._start_tunnelling_udp"
+            ) as start_tunnelling_udp_mock,
+            patch("xknx.io.KNXIPInterface._start_routing") as start_routing_mock,
+        ):
+            await interface.start()
+
+            start_secure_routing_mock.assert_called_once_with(
+                local_ip=None, keyring=None
+            )
+            start_secure_tunnelling_tcp_mock.assert_not_called()
+            start_tunnelling_tcp_mock.assert_not_called()
+            start_tunnelling_udp_mock.assert_not_called()
+            start_routing_mock.assert_not_called()
+            assert interface._gateway_info is descriptor
+
+    async def test_start_automatic_secure_routing_only_without_credentials_raises(
+        self,
+    ) -> None:
+        """Test automatic mode raises a diagnosable error for secure-routing-only gateways."""
+        descriptor = self._secure_routing_only_descriptor()
+
+        async def gateway_generator_mock(_: Any) -> AsyncGenerator[GatewayDescriptor]:
+            yield descriptor
+
+        connection_config = ConnectionConfig()  # No secure_config
+        interface = knx_interface_factory(self.xknx, connection_config)
+
+        with (
+            patch(
+                "xknx.io.knxip_interface.GatewayScanner.async_scan",
+                new=gateway_generator_mock,
+            ),
+            pytest.raises(CommunicationError, match="No usable KNX/IP device found"),
+        ):
+            await interface.start()
+
+        assert interface._interface is None
