@@ -6,6 +6,12 @@ nav_order: 2
 
 # Changelog
 
+# Unreleased
+
+### Internals
+
+- StateUpdater: Gracefully handle empty or whitespace-only `state_updater` / `sync_state` strings by falling back to the default tracker options with a warning, instead of raising an unhandled `IndexError` that crashed `XKNX` construction and RemoteValue state-updater registration.
+
 # 3.15.0 Task improvements 2026-02-15
 
 ### Telegram

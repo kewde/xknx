@@ -111,6 +111,15 @@ class StateUpdater:
             update_interval = check_update_interval(tracker_options)
         elif isinstance(tracker_options, str):
             _options = tracker_options.split()
+            if not _options:  # empty or whitespace-only string
+                logger.warning(
+                    'Could not parse StateUpdater tracker_options "%s" for %s. Using default %s %s minutes.',
+                    tracker_options,
+                    tracker_name,
+                    tracker_type,
+                    update_interval,
+                )
+                return TrackerOptions(tracker_type, update_interval)
             if _options[0].upper() == "INIT":
                 tracker_type = StateTrackerType.INIT
             elif _options[0].upper() == "EXPIRE":
