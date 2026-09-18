@@ -6,6 +6,12 @@ nav_order: 2
 
 # Changelog
 
+# Unreleased
+
+### DPT
+
+- Raise `ConversionError` instead of an uncaught `OverflowError` when serializing non-finite floats (e.g. `math.inf`) to integer DPTs (5, 6, 7, 8, 12, 13, 29).
+
 # 3.15.0 Task improvements 2026-02-15
 
 ### Telegram

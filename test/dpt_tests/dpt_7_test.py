@@ -1,5 +1,7 @@
 """Unit test for KNX 2 byte objects."""
 
+import math
+
 import pytest
 
 from xknx.dpt import DPTArray, DPTUElCurrentmA
@@ -28,6 +30,12 @@ class TestDPT2byte:
         """Test initialization of DPTUElCurrentmA with wrong value (Overflow)."""
         with pytest.raises(ConversionError):
             DPTUElCurrentmA.to_knx(65536)
+
+    @pytest.mark.parametrize("value", [math.inf, -math.inf, float("nan")])
+    def test_current_to_knx_non_finite_float(self, value: float) -> None:
+        """Test serializing DPTUElCurrentmA with non-finite float raises ConversionError."""
+        with pytest.raises(ConversionError):
+            DPTUElCurrentmA.to_knx(value)
 
     def test_current_value_max_value(self) -> None:
         """Test DPTUElCurrentmA parsing and streaming."""

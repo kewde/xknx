@@ -44,7 +44,7 @@ class DPTValue1ByteUnsigned(DPTNumeric):
             if not cls._test_boundaries(knx_value):
                 raise ValueError(f"Value out of range {cls.value_min}..{cls.value_max}")
             return DPTArray(knx_value)
-        except ValueError as err:
+        except (ValueError, OverflowError) as err:
             raise ConversionError(
                 f"Could not serialize {cls.dpt_name()}", value=value
             ) from err

@@ -1,5 +1,7 @@
 """Unit test for KNX DPT 5.010 value."""
 
+import math
+
 import pytest
 
 from xknx.dpt import DPTAngle, DPTArray, DPTScaling, DPTTariff, DPTValue1Ucount
@@ -38,6 +40,12 @@ class TestDPTValue1Ucount:
         """Test parsing of DPTValue1Ucount with wrong value (string)."""
         with pytest.raises(ConversionError):
             DPTValue1Ucount.to_knx("fnord")
+
+    @pytest.mark.parametrize("value", [math.inf, -math.inf, float("nan")])
+    def test_to_knx_non_finite_float(self, value: float) -> None:
+        """Test serializing DPTValue1Ucount with non-finite float raises ConversionError."""
+        with pytest.raises(ConversionError):
+            DPTValue1Ucount.to_knx(value)
 
     def test_from_knx_wrong_parameter(self) -> None:
         """Test parsing of DPTValue1Ucount with wrong value (3 byte array)."""

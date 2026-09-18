@@ -1,5 +1,7 @@
 """Unit test for KNX DPT 1 byte relative value  objects."""
 
+import math
+
 import pytest
 
 from xknx.dpt import DPTArray, DPTPercentV8, DPTSignedRelativeValue, DPTValue1Count
@@ -37,6 +39,12 @@ class TestDPTRelativeValue:
         """Test initialization with wrong value (Overflow)."""
         with pytest.raises(ConversionError):
             DPTSignedRelativeValue.to_knx(128)
+
+    @pytest.mark.parametrize("value", [math.inf, -math.inf, float("nan")])
+    def test_to_knx_non_finite_float(self, value: float) -> None:
+        """Test serializing DPTSignedRelativeValue with non-finite float raises ConversionError."""
+        with pytest.raises(ConversionError):
+            DPTSignedRelativeValue.to_knx(value)
 
     def test_unit(self) -> None:
         """Test unit of 1 byte relative value objects."""

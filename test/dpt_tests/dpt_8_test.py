@@ -1,5 +1,6 @@
 """Unit test for KNX 2 byte signed objects."""
 
+import math
 import struct
 from unittest.mock import patch
 
@@ -26,6 +27,12 @@ class TestDPT2ByteSigned:
         """Test initialization of DPT2ByteSigned with wrong value (Overflow)."""
         with pytest.raises(ConversionError):
             DPT2ByteSigned.to_knx(32768)
+
+    @pytest.mark.parametrize("value", [math.inf, -math.inf, float("nan")])
+    def test_signed_to_knx_non_finite_float(self, value: float) -> None:
+        """Test serializing DPT2ByteSigned with non-finite float raises ConversionError."""
+        with pytest.raises(ConversionError):
+            DPT2ByteSigned.to_knx(value)
 
     def test_signed_value_max_value(self) -> None:
         """Test DPT2ByteSigned parsing and streaming."""

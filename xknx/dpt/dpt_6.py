@@ -42,7 +42,7 @@ class DPTSignedRelativeValue(DPTNumeric):
             if knx_value < 0:
                 knx_value += 0x100
             return DPTArray(knx_value & 0xFF)
-        except ValueError as err:
+        except (ValueError, OverflowError) as err:
             raise ConversionError(
                 f"Could not serialize {cls.dpt_name()}", value=value
             ) from err
