@@ -6,6 +6,12 @@ nav_order: 2
 
 # Changelog
 
+# Unreleased changes
+
+### Address
+
+- GroupAddress/IndividualAddress: Raise `CouldNotParseAddress` instead of `ValueError` for address strings with Unicode digits (e.g. superscripts/subscripts) that pass `str.isdigit()` but are rejected by `int()`. This restores `GroupAddressDPT.set()` skip-and-continue behaviour for such keys.
+
 # 3.15.0 Task improvements 2026-02-15
 
 ### Telegram

@@ -127,6 +127,36 @@ def test_set_invalid(
     assert not xknx.group_address_dpt._ga_dpts
 
 
+@patch("logging.Logger.warning")
+@patch("logging.Logger.debug")
+def test_set_skips_unicode_digit_key_and_registers_rest(
+    logger_debug_mock: Mock, logger_warning_mock: Mock, xknx_no_interface: XKNX
+) -> None:
+    """
+    Test set skips unicode-digit keys (no ValueError) and registers the rest.
+
+    Addresses passing ``str.isdigit()`` but rejected by ``int()`` (e.g.
+    superscripts/subscripts) must raise ``CouldNotParseAddress`` so ``set()``
+    can skip-and-continue instead of aborting with ``ValueError``. Entries
+    before *and* after the bad key shall still be registered.
+    """
+    xknx = xknx_no_interface
+    xknx.group_address_dpt.set(
+        {
+            GroupAddress("1/2/3"): {"main": 5, "sub": 1},  # entry before bad key
+            "\u00b2": {"main": 5, "sub": 1},  # bad key (superscript two)
+            "5/6/7": {"main": 5, "sub": 1},  # entry after bad key
+        }
+    )
+    assert logger_warning_mock.call_count == 1
+    assert "Invalid group address" in logger_warning_mock.call_args[0][0]
+    assert logger_warning_mock.call_args[0][1] == "\u00b2"
+    assert xknx.group_address_dpt._ga_dpts == {
+        2563: DPTScaling,  # 1/2/3
+        11783: DPTScaling,  # 5/6/7
+    }
+
+
 def test_clear(xknx_no_interface: XKNX) -> None:
     """Test clear."""
     xknx = xknx_no_interface

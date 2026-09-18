@@ -124,7 +124,7 @@ class IndividualAddress(BaseAddress):
         elif isinstance(address, IndividualAddress):
             self.raw = address.raw
         elif isinstance(address, str):
-            if address.isdigit():
+            if address.isdecimal():
                 self.raw = int(address)
             else:
                 self.raw = self.__string_to_int(address)
@@ -240,7 +240,7 @@ class GroupAddress(BaseAddress):
         elif isinstance(address, GroupAddress):
             self.raw = address.raw
         elif isinstance(address, str):
-            if address.isdigit():
+            if address.isdecimal():
                 self.raw = int(address)
             else:
                 self.raw = self.__string_to_int(address)
