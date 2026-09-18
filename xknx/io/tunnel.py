@@ -48,6 +48,7 @@ class _Tunnel(Interface):
 
     __slots__ = (
         "_data_endpoint_addr",
+        "_disconnecting",
         "_heartbeat_task",
         "_reconnect_task",
         "_requested_address",
@@ -82,6 +83,7 @@ class _Tunnel(Interface):
         self.sequence_number = 0
         self.cemi_received_callback = cemi_received_callback
         self._data_endpoint_addr: tuple[str, int] | None = None
+        self._disconnecting: bool = False
         self._heartbeat_task: asyncio.Task[None] | None = None
         self._reconnect_task: asyncio.Task[None] | None = None
         self._requested_address: IndividualAddress | None = None
@@ -153,6 +155,8 @@ class _Tunnel(Interface):
 
     def _tunnel_lost(self) -> None:
         """Prepare for reconnection or shutdown when the connection is lost. Callback."""
+        if self._disconnecting:
+            return
         if self.auto_reconnect:
             # _tunnel_lost might be called multiple times when the transport receives
             # multiple invalid frames - ensure only one reconnect task is started
@@ -222,9 +226,11 @@ class _Tunnel(Interface):
         """Disconnect tunneling connection."""
         self._prepare_disconnect()
         self._stop_reconnect()
+        self._disconnecting = True
         try:
             await self._disconnect_request()
         finally:
+            self._disconnecting = False
             self.transport.stop()
 
     ####################

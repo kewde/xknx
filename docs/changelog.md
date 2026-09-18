@@ -6,6 +6,12 @@ nav_order: 2
 
 # Changelog
 
+# Unreleased
+
+### Internals
+
+- Don't start a tunnel reconnect task when the connection is lost during `disconnect()`.
+
 # 3.15.0 Task improvements 2026-02-15
 
 ### Telegram
