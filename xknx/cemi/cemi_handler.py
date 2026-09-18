@@ -106,6 +106,10 @@ class CEMIHandler:
             logger.info("CEMI not supported: %s", unsupported_cemi_err)
             self.xknx.connection_manager.cemi_count_incoming_error += 1
             return
+        except ValueError as value_err:
+            logger.warning("CEMI Frame failed to parse: %s", value_err)
+            self.xknx.connection_manager.cemi_count_incoming_error += 1
+            return
         self.handle_cemi_frame(cemi)
 
     def handle_cemi_frame(self, cemi: CEMIFrame) -> None:

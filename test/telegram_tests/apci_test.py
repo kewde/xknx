@@ -4,6 +4,10 @@ import pytest
 
 from xknx.dpt import DPTArray, DPTBinary
 from xknx.exceptions import ConversionError
+from xknx.secure.data_secure_asdu import (
+    SecurityAlgorithmIdentifier,
+    SecurityALService,
+)
 from xknx.telegram.address import IndividualAddress
 from xknx.telegram.apci import (
     APCI,
@@ -38,6 +42,7 @@ from xknx.telegram.apci import (
     PropertyValueResponse,
     PropertyValueWrite,
     Restart,
+    SecureAPDU,
     UserManufacturerInfoRead,
     UserManufacturerInfoResponse,
     UserMemoryRead,
@@ -1577,3 +1582,38 @@ class TestIndividualAddressSerialWrite:
             str(payload)
             == '<IndividualAddressSerialWrite serial="aabbcc112233" address="1.2.3" />'
         )
+
+
+class TestSecureAPDU:
+    """Test class for SecureAPDU objects."""
+
+    # S-A_Sync.req frame derived from Calimero encryptedSyncReq (AN158 v07):
+    # 43 F1 92 00 00 00 00 00 01 00 00 00 00 00 00 c1 cf 45 06 f0 9b d7 9f ab 55
+    # Byte 0 holds TPCI bits in the upper 6 bits on the wire; APCI.from_knx masks
+    # them off, so 0x03 is used here (matching SecureAPDU.to_knx output) for a
+    # clean round-trip. Byte 2 (0x92) is the SCF: low 3 bits 0b010 = S-A_Sync.req.
+    _SYNC_REQ_RAW = bytes.fromhex(
+        "03f19200000000000100000000000000c1cf4506f09bd79fab55"
+    )
+
+    def test_from_knx_sync_req(self) -> None:
+        """Test parsing S-A_Sync.req (SCF 0x92, service 0b010) does not raise."""
+        payload = APCI.from_knx(self._SYNC_REQ_RAW)
+        assert isinstance(payload, SecureAPDU)
+        assert payload.scf.service is SecurityALService.S_A_SYNC_REQ
+        assert payload.scf.tool_access is True
+        assert payload.scf.algorithm is SecurityAlgorithmIdentifier.CCM_ENCRYPTION
+        assert payload.scf.system_broadcast is False
+
+    def test_from_knx_sync_res(self) -> None:
+        """Test parsing S-A_Sync.res (SCF 0x93, service 0b011) does not raise."""
+        raw_sync_res = bytearray(self._SYNC_REQ_RAW)
+        raw_sync_res[2] = 0x93  # low 3 bits 0b011 = S-A_Sync.res
+        payload = APCI.from_knx(bytes(raw_sync_res))
+        assert isinstance(payload, SecureAPDU)
+        assert payload.scf.service is SecurityALService.S_A_SYNC_RES
+
+    def test_to_knx_round_trip(self) -> None:
+        """Test that from_knx().to_knx() round-trips a secure APDU."""
+        payload = APCI.from_knx(self._SYNC_REQ_RAW)
+        assert payload.to_knx() == self._SYNC_REQ_RAW

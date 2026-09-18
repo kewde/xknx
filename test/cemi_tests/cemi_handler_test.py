@@ -233,3 +233,58 @@ def test_incoming_cemi_no_data_secure_keys(
     assert xknx.connection_manager.cemi_count_incoming == 1
     assert xknx.connection_manager.cemi_count_incoming_error == 0
     assert xknx.connection_manager.undecoded_data_secure == 1
+
+
+@patch("xknx.cemi.cemi_handler.CEMIHandler.telegram_received")
+def test_incoming_sync_req_no_data_secure_keys(
+    mock_telegram_received: MagicMock,
+) -> None:
+    """
+    Test incoming S-A_Sync.req (SCF 0x12, service 0b010) is handled gracefully.
+
+    Before the enum fix this raised an uncaught ValueError (S_A_SYNC_REQ was
+    assigned the reserved value 0b001); parsing 0b010 crashed at
+    SecurityControlField.from_knx before the clean-recovery path was reached.
+    """
+    xknx = XKNX()
+    xknx.current_address = IndividualAddress("5.0.1")
+    # test_group_response_cemi (src 4.0.9; dst 0/4/0) with its SCF byte at index 11
+    # changed from 0x10 (S_A_DATA) to 0x12 (S_A_SYNC_REQ, low 3 bits 0b010)
+    raw = bytearray.fromhex("29003ce0400904001103f110002446cfef4ac085e7092ab062b44d")
+    raw[11] = 0x12
+
+    with patch("logging.Logger.debug") as mock_debug:
+        xknx.cemi_handler.handle_raw_cemi(bytes(raw))
+    # sync.req parses now and is dropped cleanly because no DataSecure keys set
+    assert mock_debug.call_count == 2  # reception + DataSecure debug
+    mock_telegram_received.assert_not_called()
+    assert xknx.connection_manager.cemi_count_incoming == 1
+    assert xknx.connection_manager.cemi_count_incoming_error == 0
+    assert xknx.connection_manager.undecoded_data_secure == 1
+
+
+@pytest.mark.parametrize(
+    "scf_byte",
+    # Reserved Security AL Service values per AN158 v07 (0b001 and 0b100..0b111)
+    # raise ValueError from SecurityALService in SecurityControlField.from_knx.
+    [0x11, 0x14, 0x15, 0x16, 0x17],
+)
+@patch("xknx.cemi.cemi_handler.CEMIHandler.handle_cemi_frame")
+@patch("logging.Logger.warning")
+def test_incoming_reserved_scf_value(
+    mock_warning: MagicMock,
+    mock_handle_cemi_frame: MagicMock,
+    scf_byte: int,
+) -> None:
+    """Test reserved/unknown Security AL Service values drop cleanly, not crash."""
+    xknx = XKNX()
+    # test_group_response_cemi with its SCF byte at index 11 set to a reserved
+    # service value; this raises ValueError during CEMIFrame.from_knx.
+    raw = bytearray.fromhex("29003ce0400904001103f110002446cfef4ac085e7092ab062b44d")
+    raw[11] = scf_byte
+
+    xknx.cemi_handler.handle_raw_cemi(bytes(raw))
+    mock_warning.assert_called_once()
+    mock_handle_cemi_frame.assert_not_called()
+    assert xknx.connection_manager.cemi_count_incoming == 0
+    assert xknx.connection_manager.cemi_count_incoming_error == 1
