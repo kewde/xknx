@@ -6,6 +6,12 @@ nav_order: 2
 
 # Changelog
 
+# Unreleased
+
+### Internals
+
+- Raise `CouldNotParseKNXIP` instead of `ValueError` for unknown SRP types when parsing `SEARCH_REQUEST_EXTENDED` frames, so the routing multicast listener discards them as unsupported frames rather than logging an unhandled exception.
+
 # 3.15.0 Task improvements 2026-02-15
 
 ### Telegram
