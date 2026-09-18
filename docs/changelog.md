@@ -6,6 +6,12 @@ nav_order: 2
 
 # Changelog
 
+# Unreleased
+
+### Internals
+
+- Raise `CouldNotParseKNXIP` instead of `IndexError` when parsing malformed (truncated) KNX/IP Tunnelling Feature frames.
+
 # 3.15.0 Task improvements 2026-02-15
 
 ### Telegram

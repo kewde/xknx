@@ -119,6 +119,20 @@ class TestKNXIPTunnellingFeature:
         with pytest.raises(CouldNotParseKNXIP):
             KNXIPFrame.from_knx(raw)
 
+    def test_from_knx_truncated_get_body(self) -> None:
+        """Test a TunnellingFeatureGet frame with a body too short for feature_type raises."""
+        # TUNNELLING_FEATURE_GET (0x0422) with body too short for feature_type
+        raw = bytes([0x06, 0x10, 0x04, 0x22, 0x00, 0x0A, 0x04, 0x01, 0x00, 0x00])
+        with pytest.raises(CouldNotParseKNXIP):
+            KNXIPFrame.from_knx(raw)
+
+    def test_from_knx_response_body_missing_return_code(self) -> None:
+        """Test a TunnellingFeatureResponse missing the return_code byte raises."""
+        # TUNNELLING_FEATURE_RESPONSE with body of 5 bytes (missing return_code at raw[5])
+        raw = bytes([0x06, 0x10, 0x04, 0x23, 0x00, 0x0B, 0x04, 0x01, 0x17, 0x00, 0x03])
+        with pytest.raises(CouldNotParseKNXIP):
+            KNXIPFrame.from_knx(raw)
+
     def test_get_with_data(self) -> None:
         """Test parsing and streaming wrong Get (unexpected data)."""
         raw = bytes.fromhex("06 10 04 22 00 0e 04 01 17 00 03 00 01 00")
