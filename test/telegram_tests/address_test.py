@@ -52,6 +52,12 @@ group_addresses_invalid: list[Any] = [
     "abc",
     "1.1.1",
     "0.0",
+    # Unicode characters passing str.isdigit() but rejected by int() (e.g.
+    # superscripts/subscripts) must raise CouldNotParseAddress, not ValueError.
+    "\u00b2",
+    "\u00b3",
+    "\u2080",
+    "\u2081",
     IndividualAddress("11.11.111"),
     65536,
     (0xAB, 0xCD),
@@ -90,6 +96,12 @@ individual_addresses_invalid: list[Any] = [
     "abc",
     "1/1/1",
     "0/0",
+    # Unicode characters passing str.isdigit() but rejected by int() (e.g.
+    # superscripts/subscripts) must raise CouldNotParseAddress, not ValueError.
+    "\u00b2",
+    "\u00b3",
+    "\u2080",
+    "\u2081",
     GroupAddress("1/1/111"),
     65536,
     (0xAB, 0xCD),
