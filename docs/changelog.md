@@ -6,6 +6,12 @@ nav_order: 2
 
 # Changelog
 
+# Unreleased
+
+### Internals
+
+- Fix `ConnectRequestInformation` parser raising `ValueError` instead of `CouldNotParseKNXIP` for unknown `connection_type` or `knx_layer` codes. This prevents unhandled exceptions escaping the KNX/IP frame parser on the routing multicast listener.
+
 # 3.15.0 Task improvements 2026-02-15
 
 ### Telegram

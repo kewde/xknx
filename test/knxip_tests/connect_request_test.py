@@ -158,3 +158,21 @@ class TestKNXIPConnectRequest:
         )
         with pytest.raises(CouldNotParseKNXIP):
             KNXIPFrame.from_knx(raw)
+
+    def test_from_knx_unknown_connection_type(self) -> None:
+        """Test valid tunnel CRI with unknown connection_type raises CouldNotParseKNXIP."""
+        raw = bytes.fromhex(
+            "06 10 02 05 00 1A 08 01 C0 A8 2A 01 84 95 08 01"
+            + "C0 A8 2A 01 CC A9 04 05 02 00"
+        )
+        with pytest.raises(CouldNotParseKNXIP):
+            KNXIPFrame.from_knx(raw)
+
+    def test_from_knx_unknown_knx_layer(self) -> None:
+        """Test valid tunnel CRI with unknown knx_layer raises CouldNotParseKNXIP."""
+        raw = bytes.fromhex(
+            "06 10 02 05 00 1A 08 01 C0 A8 2A 01 84 95 08 01"
+            + "C0 A8 2A 01 CC A9 04 04 09 00"
+        )
+        with pytest.raises(CouldNotParseKNXIP):
+            KNXIPFrame.from_knx(raw)
