@@ -40,7 +40,7 @@ class DPT2ByteUnsigned(DPTNumeric):
             if not cls._test_boundaries(knx_value):
                 raise ValueError("Value out of range")
             return DPTArray((knx_value >> 8, knx_value & 0xFF))
-        except ValueError as err:
+        except (ValueError, OverflowError) as err:
             raise ConversionError(
                 f"Could not serialize {cls.dpt_name()}", value=value
             ) from err

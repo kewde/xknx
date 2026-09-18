@@ -1,5 +1,6 @@
 """Unit test for KNX 4 byte objects."""
 
+import math
 import struct
 from unittest.mock import patch
 
@@ -29,6 +30,12 @@ class TestDPT4Byte:
         """Test initialization of DPT4ByteUnsigned with wrong value (Overflow)."""
         with pytest.raises(ConversionError):
             DPT4ByteUnsigned.to_knx(4294967296)
+
+    @pytest.mark.parametrize("value", [math.inf, -math.inf, float("nan")])
+    def test_unsigned_to_knx_non_finite_float(self, value: float) -> None:
+        """Test serializing DPT4ByteUnsigned with non-finite float raises ConversionError."""
+        with pytest.raises(ConversionError):
+            DPT4ByteUnsigned.to_knx(value)
 
     def test_unsigned_value_max_value(self) -> None:
         """Test DPT4ByteUnsigned parsing and streaming."""
@@ -69,6 +76,12 @@ class TestDPT4Byte:
         """Test initialization of DPT4ByteSigned with wrong value (Overflow)."""
         with pytest.raises(ConversionError):
             DPT4ByteSigned.to_knx(2147483648)
+
+    @pytest.mark.parametrize("value", [math.inf, -math.inf, float("nan")])
+    def test_signed_to_knx_non_finite_float(self, value: float) -> None:
+        """Test serializing DPT4ByteSigned with non-finite float raises ConversionError."""
+        with pytest.raises(ConversionError):
+            DPT4ByteSigned.to_knx(value)
 
     def test_signed_value_max_value(self) -> None:
         """Test DPT4ByteSigned parsing and streaming."""

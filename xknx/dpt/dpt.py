@@ -282,7 +282,7 @@ class DPTStructIntMixin:
             if not (cls.value_min <= knx_value <= cls.value_max):
                 raise ValueError
             return DPTArray(struct.pack(cls._struct_format, knx_value))
-        except (ValueError, struct.error) as err:
+        except (ValueError, OverflowError, struct.error) as err:
             raise ConversionError(
                 f"Could not serialize {cls.dpt_name()}",  # type: ignore[attr-defined]
                 value=value,

@@ -1,5 +1,7 @@
 """Unit test for KNX 8 byte signed objects."""
 
+import math
+
 import pytest
 
 from xknx.dpt import DPT8ByteSigned, DPTArray
@@ -31,5 +33,11 @@ class TestDPT8ByteSigned:
     )
     def test_exceeding_limits(self, value: int) -> None:
         """Test invalid values."""
+        with pytest.raises(ConversionError):
+            DPT8ByteSigned.to_knx(value)
+
+    @pytest.mark.parametrize("value", [math.inf, -math.inf, float("nan")])
+    def test_to_knx_non_finite_float(self, value: float) -> None:
+        """Test serializing DPT8ByteSigned with non-finite float raises ConversionError."""
         with pytest.raises(ConversionError):
             DPT8ByteSigned.to_knx(value)
