@@ -187,3 +187,26 @@ class TestFlowControl:
         assert not flow_control._timer_task.done()
         await time_travel(BUSY_DECREMENT_TIME)  # and second decrement time
         assert flow_control._timer_task.done()
+
+    @patch("random.random")
+    async def test_phase_b_ratchet_regression(
+        self, random_mock: Mock, time_travel: EventLoopClockAdvancer
+    ) -> None:
+        """Phase-B interrupts must not let _received_busy_frames ratchet upward across waves."""
+        random_mock.return_value = 0.5
+        flow_control = _RoutingFlowControl()
+        for _ in range(5):
+            flow_control.handle_routing_busy(RoutingBusy(wait_time=100))
+            await time_travel(BUSY_INCREMENT_COOLDOWN + 0.0001)
+            flow_control.handle_routing_busy(RoutingBusy(wait_time=100))
+            await time_travel(
+                0.100
+                + flow_control._received_busy_frames * BUSY_RANDOM_TIME_FACTOR * 0.5
+                + 0.005
+            )
+            assert flow_control._wait_start_time is None
+            assert flow_control._ready.is_set()
+            flow_control.handle_routing_busy(RoutingBusy(wait_time=100))
+        assert flow_control._received_busy_frames <= 1, (
+            f"ratchet leak: counter reached {flow_control._received_busy_frames}"
+        )

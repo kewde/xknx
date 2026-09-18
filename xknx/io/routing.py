@@ -99,6 +99,7 @@ class _RoutingFlowControl:
         now = self._loop.time()
         previous_busy_frame_time = self._last_busy_frame_time
         self._last_busy_frame_time = now
+        was_fading = self._wait_start_time is None
         if self._wait_start_time is None:
             logger.info(
                 "RoutingBusy received: %s",
@@ -124,6 +125,8 @@ class _RoutingFlowControl:
 
         if self._timer_task:
             self._timer_task.cancel()
+            if was_fading:
+                self._received_busy_frames = 0
         self._timer_task = asyncio.create_task(self._resume_sending())
 
     async def _resume_sending(self) -> None:
