@@ -7,7 +7,7 @@ import pytest
 
 from xknx import XKNX
 from xknx.core import XknxConnectionState
-from xknx.core.state_updater import StateTrackerType, _StateTracker
+from xknx.core.state_updater import StateTrackerType, TrackerOptions, _StateTracker
 from xknx.remote_value import RemoteValue
 from xknx.telegram import GroupAddress
 
@@ -243,4 +243,13 @@ class TestStateUpdater:
         assert (
             xknx.state_updater._workers[id(remote_value)].tracker_type
             == expected_tracker_type
+        )
+
+    @pytest.mark.parametrize("option", ["", " ", "\t", "\n "])
+    def test_tracker_parser_empty_or_whitespace(self, option: Any) -> None:
+        """Empty/whitespace strings should fall back to the default, not crash."""
+        xknx = XKNX()
+        result = xknx.state_updater.parse_tracker_options(option, "test")
+        assert result == TrackerOptions(
+            tracker_type=StateTrackerType.EXPIRE, update_interval_min=60
         )
