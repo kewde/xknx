@@ -529,9 +529,15 @@ class CEMIMPropWriteResponse(CEMIData):
                 raise CouldNotParseCEMI(
                     f"Invalid CEMI error response length: {len(raw)}; CEMI: {raw.hex()}"
                 )
+            try:
+                error_code = CEMIErrorCode(raw[CEMIMPropInfo.LENGTH])
+            except ValueError:
+                raise CouldNotParseCEMI(
+                    f"Invalid CEMI error code: {raw[CEMIMPropInfo.LENGTH]} in CEMI: {raw.hex()}"
+                ) from None
             return cls(
                 property_info=property_info,
-                error_code=CEMIErrorCode(raw[CEMIMPropInfo.LENGTH]),
+                error_code=error_code,
             )
 
         if len(raw) != CEMIMPropInfo.LENGTH:

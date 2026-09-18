@@ -177,6 +177,30 @@ def test_unsupported_cemi(
     assert xknx.connection_manager.cemi_count_incoming_error == 1
 
 
+@pytest.mark.parametrize(
+    "raw",
+    [
+        # M_PROP_WRITE_CON (0xF5) error response with out-of-range error code byte 0x0B
+        # (first value past the valid CEMIErrorCode range 0x00-0x0A)
+        bytes.fromhex("f5000b013400010b"),
+        # M_PROP_WRITE_CON (0xF5) error response with out-of-range error code byte 0xFF
+        bytes.fromhex("f5000b01340001ff"),
+    ],
+)
+@patch("xknx.cemi.cemi_handler.CEMIHandler.handle_cemi_frame")
+@patch("logging.Logger.warning")
+def test_invalid_m_prop_write_con_error_code(
+    mock_warning: MagicMock, mock_handle_cemi_frame: MagicMock, raw: bytes
+) -> None:
+    """Test M_PROP_WRITE_CON with out-of-range error code raises CouldNotParseCEMI, not ValueError."""
+    xknx = XKNX()
+
+    xknx.cemi_handler.handle_raw_cemi(raw)
+    mock_warning.assert_called_once()
+    mock_handle_cemi_frame.assert_not_called()
+    assert xknx.connection_manager.cemi_count_incoming_error == 1
+
+
 @patch("xknx.cemi.cemi_handler.CEMIHandler.telegram_received")
 @patch("logging.Logger.debug")
 def test_incoming_from_own_ia(
