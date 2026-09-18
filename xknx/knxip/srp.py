@@ -52,6 +52,11 @@ class SRP:
             if len(self.data) % 2:
                 self.data += bytes([0])
             self.payload_size = SRP.SRP_HEADER_SIZE + len(self.data)
+        else:
+            if self.data:
+                raise CouldNotParseKNXIP(
+                    "Search Request Parameter payload size does not match type."
+                )
 
     def validate_payload_length(self, size: int) -> None:
         """Validate the length of the payload."""
@@ -88,11 +93,16 @@ class SRP:
             raise CouldNotParseKNXIP("Data too short for SRP object.")
 
         size: int = data[0]
-        if size > len(data):
-            raise CouldNotParseKNXIP("SRP is larger than actual data size.")
+        if size < SRP.SRP_HEADER_SIZE or size > len(data):
+            raise CouldNotParseKNXIP("SRP size invalid.")
+
+        try:
+            srp_type = SearchRequestParameterType(data[1] & 0x7F)
+        except ValueError as exc:
+            raise CouldNotParseKNXIP("Unknown SearchRequestParameterType.") from exc
 
         return SRP(
-            srp_type=SearchRequestParameterType(data[1] & 0x7F),
+            srp_type=srp_type,
             mandatory=bool(data[1] >> SRP.MANDATORY_BIT_INDEX),
             data=data[2:size],
         )
