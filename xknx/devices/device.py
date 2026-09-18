@@ -86,7 +86,7 @@ class Device(ABC):
         *args: Any,  # a single argument may be passed if used as a RemoteValue callback
     ) -> None:
         """Execute callbacks after internal state has been changed."""
-        for device_callback in self.device_updated_cbs:
+        for device_callback in list(self.device_updated_cbs):
             try:
                 device_callback(self)
             except Exception:  # pylint: disable=broad-except

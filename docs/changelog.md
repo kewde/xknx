@@ -6,6 +6,12 @@ nav_order: 2
 
 # Changelog
 
+# Unreleased
+
+### Bugfixes
+
+- Fix re-entrant mutation of the device registry or callback lists during telegram dispatch silently skipping still-registered devices and callbacks (e.g. a `device_updated_cb` that calls `async_remove` or unregisters a later callback mid-iteration).
+
 # 3.15.0 Task improvements 2026-02-15
 
 ### Telegram
