@@ -276,9 +276,9 @@ class P2PConnection:
         if isinstance(telegram.tpci, TDisconnect):
             logger.info("%s disconnected management session.", self.address)
             self._connected = False
-            if self._ack_waiter:
-                self._response_waiter.set_exception(ManagementConnectionRefused())
-            if not self._response_waiter.done():
+            if self._ack_waiter and not self._ack_waiter.done():
+                self._ack_waiter.set_exception(ManagementConnectionRefused())
+            elif not self._response_waiter.done():
                 self._response_waiter.set_exception(ManagementConnectionRefused())
             return
         if isinstance(telegram.tpci, TAck | TNak):
