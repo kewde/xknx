@@ -103,7 +103,12 @@ class ConnectRequestInformation:
             raise CouldNotParseKNXIP("CRI data has wrong length")
         if cri_length < ConnectRequestInformation.CRI_LENGTH:
             raise CouldNotParseKNXIP("CRI length too small")
-        self.connection_type = ConnectRequestType(raw[1])
+        try:
+            self.connection_type = ConnectRequestType(raw[1])
+        except ValueError as err:
+            raise CouldNotParseKNXIP(
+                f"ConnectRequestType unknown: 0x{raw[1]:02x}"
+            ) from err
         if self._is_tunnel_cri():
             if cri_length == ConnectRequestInformation.CRI_TUNNEL_LENGTH:
                 extended = False
@@ -111,7 +116,12 @@ class ConnectRequestInformation:
                 extended = True
             else:
                 raise CouldNotParseKNXIP("CRI has wrong length")
-            self.knx_layer = TunnellingLayer(raw[2])
+            try:
+                self.knx_layer = TunnellingLayer(raw[2])
+            except ValueError as err:
+                raise CouldNotParseKNXIP(
+                    f"TunnellingLayer unknown: 0x{raw[2]:02x}"
+                ) from err
             self.individual_address = (
                 IndividualAddress.from_knx(raw[4:6]) if extended else None
             )
