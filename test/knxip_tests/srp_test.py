@@ -3,7 +3,12 @@
 import pytest
 
 from xknx.exceptions import ConversionError, CouldNotParseKNXIP
-from xknx.knxip import DIBServiceFamily, DIBTypeCode, SearchRequestParameterType
+from xknx.knxip import (
+    DIBServiceFamily,
+    DIBTypeCode,
+    KNXIPFrame,
+    SearchRequestParameterType,
+)
 from xknx.knxip.srp import SRP
 
 
@@ -52,6 +57,29 @@ class TestKNXIPSRP:
         # too small
         with pytest.raises(CouldNotParseKNXIP):
             SRP.from_knx(bytes.fromhex("08"))
+
+    def test_unknown_type_raises_couldnotparse(self) -> None:
+        """
+        Test from_knx with an unknown SRP type raises CouldNotParseKNXIP, not ValueError.
+
+        The parser masks the type byte with `& 0x7F` (accepting 0x00-0x7F) but
+        SearchRequestParameterType only defines 0x00-0x04, so any value 0x05-0x7F
+        is unknown to the enum. This used to raise a bare ValueError that escaped
+        the transport's `except CouldNotParseKNXIP` and reached asyncio's
+        call_exception_handler; it now raises CouldNotParseKNXIP like the other
+        from_knx parsers (see KNXIPHeader.from_knx).
+        """
+        # Unknown type 0x10 (appears as 0x90 on the wire with the Mandatory bit set):
+        with pytest.raises(CouldNotParseKNXIP):
+            SRP.from_knx(bytes.fromhex("02 90"))
+
+    def test_unknown_type_raises_couldnotparse_via_frame(self) -> None:
+        """Test a SEARCH_REQUEST_EXTENDED with an unknown SRP type parses to CouldNotParseKNXIP."""
+        # End-to-end through the frame parser. Header total_length is 0x10
+        # (6-byte header + 10-byte body = 8-byte HPAI + 2-byte SRP) so the SRP
+        # is not truncated as out-of-frame data:
+        with pytest.raises(CouldNotParseKNXIP):
+            KNXIPFrame.from_knx(bytes.fromhex("0610020b001008010000000000000210"))
 
     @pytest.mark.parametrize(
         ("srp", "expected_bytes"),

@@ -91,8 +91,16 @@ class SRP:
         if size > len(data):
             raise CouldNotParseKNXIP("SRP is larger than actual data size.")
 
+        srp_type_raw = data[1] & 0x7F
+        try:
+            srp_type = SearchRequestParameterType(srp_type_raw)
+        except ValueError:
+            raise CouldNotParseKNXIP(
+                f"SRP type unknown: 0x{srp_type_raw:02X}"
+            ) from None
+
         return SRP(
-            srp_type=SearchRequestParameterType(data[1] & 0x7F),
+            srp_type=srp_type,
             mandatory=bool(data[1] >> SRP.MANDATORY_BIT_INDEX),
             data=data[2:size],
         )
