@@ -6,6 +6,12 @@ nav_order: 2
 
 # Changelog
 
+# Unreleased
+
+### Connection
+
+- Tunnelling: serialize the `CEMIHandler.send_telegram` L_DATA_REQ -> L_DATA_CON round trip with a lock so only one request is in flight per connection. This prevents a shared confirmation event from falsely confirming concurrent sends and stops drift of the `cemi_count_outgoing` and `cemi_count_outgoing_error` counters.
+
 # 3.15.0 Task improvements 2026-02-15
 
 ### Telegram

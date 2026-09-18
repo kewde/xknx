@@ -41,13 +41,14 @@ REQUEST_TO_CONFIRMATION_TIMEOUT = 3
 class CEMIHandler:
     """Class for handling CEMI frames from/to the TelegramQueue."""
 
-    __slots__ = ("_l_data_confirmation_event", "data_secure", "xknx")
+    __slots__ = ("_l_data_confirmation_event", "_send_lock", "data_secure", "xknx")
 
     def __init__(self, xknx: XKNX) -> None:
         """Initialize CEMIHandler class."""
         self.xknx = xknx
         self.data_secure: DataSecure | None = None
         self._l_data_confirmation_event = asyncio.Event()
+        self._send_lock = asyncio.Lock()
 
     def data_secure_init(self, keyring: Keyring | None) -> None:
         """Initialize DataSecure."""
@@ -76,23 +77,24 @@ class CEMIHandler:
         else:
             telegram.data_secure = False
 
-        self._l_data_confirmation_event.clear()
-        try:
-            await self.xknx.knxip_interface.send_cemi(cemi)
-        except (ConversionError, CommunicationError) as ex:
-            logger.warning("Could not send CEMI frame: %s for %s", ex, cemi)
-            self.xknx.connection_manager.cemi_count_outgoing_error += 1
-            raise ex
+        async with self._send_lock:
+            self._l_data_confirmation_event.clear()
+            try:
+                await self.xknx.knxip_interface.send_cemi(cemi)
+            except (ConversionError, CommunicationError) as ex:
+                logger.warning("Could not send CEMI frame: %s for %s", ex, cemi)
+                self.xknx.connection_manager.cemi_count_outgoing_error += 1
+                raise ex
 
-        try:
-            async with asyncio_timeout(REQUEST_TO_CONFIRMATION_TIMEOUT):
-                await self._l_data_confirmation_event.wait()
-        except asyncio.TimeoutError:
-            self.xknx.connection_manager.cemi_count_outgoing_error += 1
-            raise ConfirmationError(
-                f"L_DATA_CON Data Link Layer confirmation timed out for {cemi}"
-            ) from None
-        self.xknx.connection_manager.cemi_count_outgoing += 1
+            try:
+                async with asyncio_timeout(REQUEST_TO_CONFIRMATION_TIMEOUT):
+                    await self._l_data_confirmation_event.wait()
+            except asyncio.TimeoutError:
+                self.xknx.connection_manager.cemi_count_outgoing_error += 1
+                raise ConfirmationError(
+                    f"L_DATA_CON Data Link Layer confirmation timed out for {cemi}"
+                ) from None
+            self.xknx.connection_manager.cemi_count_outgoing += 1
 
     def handle_raw_cemi(self, raw_cemi: bytes) -> None:
         """Parse and handle incoming raw CEMI Frames."""

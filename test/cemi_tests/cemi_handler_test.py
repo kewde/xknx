@@ -8,7 +8,7 @@ import pytest
 from xknx import XKNX
 from xknx.cemi import CEMIFrame, CEMILData, CEMIMessageCode
 from xknx.dpt import DPTArray
-from xknx.exceptions import ConfirmationError
+from xknx.exceptions import CommunicationError, ConfirmationError
 from xknx.telegram import GroupAddress, IndividualAddress, Telegram, apci, tpci
 
 from ..conftest import EventLoopClockAdvancer
@@ -58,6 +58,99 @@ async def test_wait_for_l2_confirmation(time_travel: EventLoopClockAdvancer) -> 
         await task
         assert xknx.connection_manager.cemi_count_outgoing == 1
         assert xknx.connection_manager.cemi_count_outgoing_error == 1
+
+
+def _confirmation_cemi(telegram: Telegram) -> CEMIFrame:
+    """Build an L_DATA_CON CEMIFrame matching the given telegram."""
+    return CEMIFrame(
+        code=CEMIMessageCode.L_DATA_CON,
+        data=CEMILData.init_from_telegram(telegram),
+    )
+
+
+async def test_concurrent_send_telegram_serialized_by_send_lock(
+    time_travel: EventLoopClockAdvancer,
+) -> None:
+    """Concurrent send_telegram calls are serialized; one L_DATA_REQ in flight."""
+    xknx = XKNX()
+    xknx.knxip_interface = AsyncMock()
+
+    telegram_a = Telegram(
+        destination_address=GroupAddress(1),
+        payload=apci.GroupValueWrite(DPTArray((1,))),
+    )
+    telegram_b = Telegram(
+        destination_address=GroupAddress(2),
+        payload=apci.GroupValueWrite(DPTArray((2,))),
+    )
+
+    task_a = asyncio.create_task(xknx.cemi_handler.send_telegram(telegram_a))
+    task_b = asyncio.create_task(xknx.cemi_handler.send_telegram(telegram_b))
+    await time_travel(0)
+
+    # Only the first send is in-flight; the second is blocked on the lock.
+    xknx.knxip_interface.send_cemi.assert_called_once()
+    assert not task_a.done()
+    assert not task_b.done()
+    assert xknx.connection_manager.cemi_count_outgoing == 0
+    assert xknx.connection_manager.cemi_count_outgoing_error == 0
+
+    # Confirming the first releases the lock so the second can proceed.
+    xknx.cemi_handler.handle_cemi_frame(_confirmation_cemi(telegram_a))
+    await time_travel(0)
+    assert task_a.done()
+    await task_a
+    assert xknx.knxip_interface.send_cemi.call_count == 2
+    assert not task_b.done()  # second now waiting for its own L_DATA_CON
+    assert xknx.connection_manager.cemi_count_outgoing == 1
+
+    xknx.cemi_handler.handle_cemi_frame(_confirmation_cemi(telegram_b))
+    await time_travel(0)
+    assert task_b.done()
+    await task_b
+
+    assert xknx.connection_manager.cemi_count_outgoing == 2
+    assert xknx.connection_manager.cemi_count_outgoing_error == 0
+
+
+async def test_send_telegram_send_cemi_error_releases_send_lock(
+    time_travel: EventLoopClockAdvancer,
+) -> None:
+    """A send_cemi failure releases the send lock so the next send can proceed."""
+    xknx = XKNX()
+    xknx.knxip_interface = AsyncMock()
+    xknx.knxip_interface.send_cemi.side_effect = CommunicationError("tunnel down")
+
+    telegram_a = Telegram(
+        destination_address=GroupAddress(1),
+        payload=apci.GroupValueWrite(DPTArray((1,))),
+    )
+    telegram_b = Telegram(
+        destination_address=GroupAddress(2),
+        payload=apci.GroupValueWrite(DPTArray((2,))),
+    )
+
+    task_a = asyncio.create_task(xknx.cemi_handler.send_telegram(telegram_a))
+    with pytest.raises(CommunicationError):
+        await time_travel(0)
+        await task_a
+    assert xknx.connection_manager.cemi_count_outgoing_error == 1
+    assert xknx.connection_manager.cemi_count_outgoing == 0
+
+    # Lock was released despite the error; a follow-up send proceeds normally.
+    xknx.knxip_interface.send_cemi.side_effect = None
+    xknx.knxip_interface.send_cemi.reset_mock()
+    task_b = asyncio.create_task(xknx.cemi_handler.send_telegram(telegram_b))
+    await time_travel(0)
+    xknx.knxip_interface.send_cemi.assert_called_once()
+    assert not task_b.done()
+
+    xknx.cemi_handler.handle_cemi_frame(_confirmation_cemi(telegram_b))
+    await time_travel(0)
+    assert task_b.done()
+    await task_b
+    assert xknx.connection_manager.cemi_count_outgoing == 1
+    assert xknx.connection_manager.cemi_count_outgoing_error == 1
 
 
 @patch("xknx.management.management.Management.process")
