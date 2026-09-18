@@ -6,7 +6,9 @@ import pytest
 
 from xknx import XKNX
 from xknx.devices import BinarySensor, Device, Light, Switch
-from xknx.telegram import GroupAddress
+from xknx.dpt import DPTBinary
+from xknx.telegram import GroupAddress, Telegram
+from xknx.telegram.apci import GroupValueWrite
 
 
 class TestDevices:
@@ -217,3 +219,80 @@ class TestDevices:
         after_update_callback2.assert_not_called()
         after_update_callback1.reset_mock()
         after_update_callback2.reset_mock()
+
+    #
+    # TEST RE-ENTRANT MUTATION DURING DISPATCH
+    #
+    async def test_process_self_removing_device_does_not_skip_siblings(self) -> None:
+        """
+        Test that a device removing itself mid-dispatch doesn't skip siblings.
+
+        A device_updated_cb that synchronously calls async_remove() from within a
+        device's own process() frame must not cause still-registered siblings
+        sharing the group address to be silently skipped.
+        """
+        xknx = XKNX()
+        a = BinarySensor(xknx, "A", group_address_state="1/2/3", always_callback=True)
+        b = BinarySensor(xknx, "B", group_address_state="1/2/3", always_callback=True)
+        c = BinarySensor(xknx, "C", group_address_state="1/2/3", always_callback=True)
+        xknx.devices.async_add(a)
+        xknx.devices.async_add(b)
+        xknx.devices.async_add(c)
+
+        def cb(dev: Device) -> None:
+            if dev is a:
+                xknx.devices.async_remove(a)  # a removes ITSELF mid-process
+
+        xknx.devices.register_device_updated_cb(cb)
+        xknx.devices.process(
+            Telegram(
+                destination_address=GroupAddress("1/2/3"),
+                payload=GroupValueWrite(DPTBinary(1)),
+            )
+        )
+
+        assert a.state is True
+        assert b.state is True
+        assert c.state is True
+
+    async def test_after_update_unregister_cb_does_not_skip_later_cb(self) -> None:
+        """Test Device.after_update doesn't skip later callbacks on re-entrant unregister."""
+        xknx = XKNX()
+        device = BinarySensor(
+            xknx, "D", group_address_state="1/2/3", always_callback=True
+        )
+        xknx.devices.async_add(device)
+        calls: list[str] = []
+
+        def cb_b(dev: Device) -> None:
+            calls.append("cb_b")
+
+        def cb_a(dev: Device) -> None:
+            calls.append("cb_a")
+            device.unregister_device_updated_cb(cb_b)
+
+        device.register_device_updated_cb(cb_a)
+        device.register_device_updated_cb(cb_b)
+        device.after_update()
+        assert calls == ["cb_a", "cb_b"]
+
+    async def test_device_updated_unregister_cb_does_not_skip_later_cb(self) -> None:
+        """Test Devices.device_updated doesn't skip later callbacks on re-entrant unregister."""
+        xknx = XKNX()
+        device = BinarySensor(
+            xknx, "D", group_address_state="1/2/3", always_callback=True
+        )
+        xknx.devices.async_add(device)
+        calls: list[str] = []
+
+        def cb_b(dev: Device) -> None:
+            calls.append("cb_b")
+
+        def cb_a(dev: Device) -> None:
+            calls.append("cb_a")
+            xknx.devices.unregister_device_updated_cb(cb_b)
+
+        xknx.devices.register_device_updated_cb(cb_a)
+        xknx.devices.register_device_updated_cb(cb_b)
+        device.after_update()
+        assert calls == ["cb_a", "cb_b"]

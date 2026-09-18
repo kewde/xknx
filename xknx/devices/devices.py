@@ -96,7 +96,7 @@ class Devices:
 
     def device_updated(self, device: Device) -> None:
         """Call all registered device updated callbacks of device."""
-        for device_updated_cb in self.device_updated_cbs:
+        for device_updated_cb in list(self.device_updated_cbs):
             device_updated_cb(device)
 
     def process(self, telegram: Telegram) -> None:
@@ -104,7 +104,9 @@ class Devices:
         if isinstance(
             telegram.destination_address, GroupAddress | InternalGroupAddress
         ):
-            for device in self.devices_by_group_address(telegram.destination_address):
+            for device in list(
+                self.devices_by_group_address(telegram.destination_address)
+            ):
                 device.process(telegram)
 
     async def sync(self) -> None:
