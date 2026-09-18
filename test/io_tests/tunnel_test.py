@@ -442,6 +442,126 @@ class TestUDPTunnel:
         assert self.tunnel._reconnect_task is None
 
     @patch("xknx.io.transport.udp_transport.UDPTransport.send")
+    @patch("xknx.io.transport.udp_transport.UDPTransport.stop")
+    @patch("xknx.io.transport.udp_transport.UDPTransport.getsockname")
+    @patch("xknx.io.transport.udp_transport.UDPTransport.connect")
+    async def test_tunnel_disconnect_race_spawns_no_reconnect(
+        self,
+        mock_transport_connect: Mock,
+        mock_transport_getsockname: Mock,
+        mock_transport_stop: Mock,
+        mock_transport_send: Mock,
+        time_travel: EventLoopClockAdvancer,
+    ) -> None:
+        """Test a server DisconnectRequest arriving during disconnect() spawns no reconnect task."""
+        local_addr = ("192.168.1.1", 12345)
+        remote_addr = ("192.168.1.2", 3671)
+        mock_transport_getsockname.return_value = local_addr
+
+        def transport_connect_error_side_effect() -> None:
+            raise CommunicationError("unreachable gateway")
+
+        # gateway is unreachable; connect() always raises CommunicationError
+        mock_transport_connect.side_effect = transport_connect_error_side_effect
+        self.tunnel.auto_reconnect = True
+        self.tunnel.communication_channel = 23
+        self.tunnel.transport.transport = Mock()
+
+        server_disconnect_request = KNXIPFrame.init_from_body(
+            DisconnectRequest(
+                communication_channel_id=23, control_endpoint=HPAI(*remote_addr)
+            )
+        )
+        disconnect_response = KNXIPFrame.init_from_body(
+            DisconnectResponse(communication_channel_id=23)
+        )
+
+        disconnection_task = asyncio.create_task(self.tunnel.disconnect())
+        await time_travel(0)
+        # disconnect() sent its DisconnectRequest and is now awaiting the response
+        # (1s window). A server-initiated DisconnectRequest arrives in that window:
+        self.tunnel.transport.handle_knxipframe(
+            server_disconnect_request, HPAI(*remote_addr)
+        )
+        # No reconnect task shall be spawned while an intentional disconnect is in progress
+        assert self.tunnel._reconnect_task is None
+
+        # Deliver the awaited DisconnectResponse to let disconnect() finish
+        self.tunnel.transport.handle_knxipframe(disconnect_response, HPAI(*remote_addr))
+        await disconnection_task
+        await time_travel(0)
+
+        # After disconnect() returns no background reconnect task shall survive
+        assert self.tunnel._reconnect_task is None
+        mock_transport_connect.assert_not_called()
+        mock_transport_stop.assert_called_once()
+        mock_transport_send.assert_called()
+
+    @patch("xknx.io.transport.udp_transport.UDPTransport.send")
+    @patch("xknx.io.transport.udp_transport.UDPTransport.stop")
+    @patch("xknx.io.transport.udp_transport.UDPTransport.getsockname")
+    @patch("xknx.io.transport.udp_transport.UDPTransport.connect")
+    # no need to wait for ConnectResponse in this test, so mock connect request
+    @patch("xknx.io.tunnel.UDPTunnel._connect_request")
+    async def test_tunnel_disconnect_race_no_unwanted_reconnect(
+        self,
+        mock_connect_request: Mock,
+        mock_transport_connect: Mock,
+        mock_transport_getsockname: Mock,
+        mock_transport_stop: Mock,
+        mock_transport_send: Mock,
+        time_travel: EventLoopClockAdvancer,
+    ) -> None:
+        """Test a server DisconnectRequest during disconnect() triggers no unwanted reconnect."""
+        local_addr = ("192.168.1.1", 12345)
+        remote_addr = ("192.168.1.2", 3671)
+        mock_transport_getsockname.return_value = local_addr
+
+        def transport_connect_success_side_effect() -> None:
+            self.tunnel.transport.transport = Mock()
+
+        # gateway is reachable; connect() succeeds
+        mock_transport_connect.side_effect = transport_connect_success_side_effect
+        self.tunnel.auto_reconnect = True
+        self.tunnel.communication_channel = 23
+        self.tunnel.transport.transport = Mock()
+
+        server_disconnect_request = KNXIPFrame.init_from_body(
+            DisconnectRequest(
+                communication_channel_id=23, control_endpoint=HPAI(*remote_addr)
+            )
+        )
+        disconnect_response = KNXIPFrame.init_from_body(
+            DisconnectResponse(communication_channel_id=23)
+        )
+
+        disconnection_task = asyncio.create_task(self.tunnel.disconnect())
+        await time_travel(0)
+        # disconnect() sent its DisconnectRequest and is now awaiting the response
+        # (1s window). A server-initiated DisconnectRequest arrives in that window:
+        self.tunnel.transport.handle_knxipframe(
+            server_disconnect_request, HPAI(*remote_addr)
+        )
+        # No reconnect task shall be spawned while an intentional disconnect is in progress
+        assert self.tunnel._reconnect_task is None
+        await time_travel(0)
+        # ...and no unwanted reconnect attempt shall have been issued
+        mock_transport_connect.assert_not_called()
+        mock_connect_request.assert_not_called()
+
+        # Deliver the awaited DisconnectResponse to let disconnect() finish
+        self.tunnel.transport.handle_knxipframe(disconnect_response, HPAI(*remote_addr))
+        await disconnection_task
+        await time_travel(0)
+
+        # After disconnect() returns no reconnect task and no unwanted reconnect happened
+        assert self.tunnel._reconnect_task is None
+        mock_transport_connect.assert_not_called()
+        mock_connect_request.assert_not_called()
+        mock_transport_stop.assert_called_once()
+        mock_transport_send.assert_called()
+
+    @patch("xknx.io.transport.udp_transport.UDPTransport.send")
     @patch("xknx.io.transport.udp_transport.UDPTransport.getsockname")
     async def test_tunnel_request_description(
         self,
